@@ -1,5 +1,5 @@
 /**
- *  :: pptxgen.ts ::
+ *  :: deckkit.ts ::
  *
  *  JavaScript framework that creates PowerPoint (pptx) presentations
  *  https://github.com/gitbrent/PptxGenJS
@@ -100,7 +100,7 @@ import * as genXml from './gen-xml'
 
 const VERSION = '4.0.1'
 
-export default class PptxGenJS implements IPresentationProps {
+export default class DeckKit implements IPresentationProps {
 	// Property getters/setters
 
 	/**
@@ -132,7 +132,7 @@ export default class PptxGenJS implements IPresentationProps {
 	}
 
 	/**
-	 * PptxGenJS Library Version
+	 * DeckKit Library Version
 	 */
 	private readonly _version: string = VERSION
 	public get version(): string {
@@ -325,12 +325,12 @@ export default class PptxGenJS implements IPresentationProps {
 		}
 
 		// Core
-		this._author = 'PptxGenJS'
-		this._company = 'PptxGenJS'
+		this._author = 'DeckKit'
+		this._company = 'DeckKit'
 		this._revision = '1' // Note: Must be a whole number
-		this._subject = 'PptxGenJS Presentation'
-		this._title = 'PptxGenJS Presentation'
-		// PptxGenJS props
+		this._subject = 'DeckKit Presentation'
+		this._title = 'DeckKit Presentation'
+		// DeckKit props
 		this._presLayout = {
 			name: this.LAYOUTS[DEF_PRES_LAYOUT].name,
 			_sizeW: this.LAYOUTS[DEF_PRES_LAYOUT].width,

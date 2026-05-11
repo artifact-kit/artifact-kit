@@ -1,7 +1,7 @@
 {
-  "name": "@artifact-kit/pptxgenjs",
+  "name": "@artifact-kit/deckkit",
   "version": "0.0.0",
-  "description": "Artifact Kit fork of PptxGenJS for Node.js PowerPoint generation.",
+  "description": "Artifact Kit core library for PowerPoint deck generation.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "author": {
@@ -11,7 +11,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/artifact-kit/artifact-kit.git",
-    "directory": "packages/pptxgenjs"
+    "directory": "packages/deckkit"
   },
   "keywords": [
     "artifact-kit",

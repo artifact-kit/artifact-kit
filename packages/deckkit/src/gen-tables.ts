@@ -5,7 +5,7 @@
 import { DEF_FONT_SIZE, DEF_SLIDE_MARGIN_IN, EMU, LINEH_MODIFIER, ONEPT, SLIDE_OBJECT_TYPES } from './core-enums'
 import { PresLayout, SlideLayout, TableCell, TableToSlidesProps, TableRow, TableRowSlide, TableCellProps } from './core-interfaces'
 import { getSmartParseNumber, inch2Emu, rgbToHex, valToPts } from './gen-utils'
-import PptxGenJS from './pptxgen'
+import DeckKit from './deckkit'
 
 /**
  * Break cell text into lines based upon table column width (e.g.: Magic Happens Here(tm))
@@ -515,12 +515,12 @@ export function getSlidesForTableRows(tableRows: TableCell[][] = [], tableProps:
 
 /**
  * Reproduces an HTML table as a PowerPoint table - including column widths, style, etc. - creates 1 or more slides as needed
- * @param {PptxGenJS} pptx - pptxgenjs instance
+ * @param {DeckKit} pptx - DeckKit instance
  * @param {string} tabEleId - HTMLElementID of the table
  * @param {ITableToSlidesOpts} options - array of options (e.g.: tabsize)
  * @param {SlideLayout} masterSlide - masterSlide
  */
-export function genTableToSlides(pptx: PptxGenJS, tabEleId: string, options: TableToSlidesProps = {}, masterSlide?: SlideLayout): void {
+export function genTableToSlides(pptx: DeckKit, tabEleId: string, options: TableToSlidesProps = {}, masterSlide?: SlideLayout): void {
 	const opts = options || {}
 	opts.slideMargin = opts.slideMargin || opts.slideMargin === 0 ? opts.slideMargin : 0.5
 	let emuSlideTabW = opts.w || pptx.presLayout.width

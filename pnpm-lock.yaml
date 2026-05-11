@@ -8,7 +8,7 @@ importers:
 
   .: {}
 
-  packages/pptxgenjs:
+  packages/deckkit:
     dependencies:
       jszip:
         specifier: ^3.10.1

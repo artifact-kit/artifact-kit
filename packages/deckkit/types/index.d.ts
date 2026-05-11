@@ -7,11 +7,11 @@
 //                 Stephen Cronin <https://github.com/cronin4392>
 // TypeScript Version: 3.x
 
-export as namespace PptxGenJS
+export as namespace DeckKit
 
-export default PptxGenJS
+export default DeckKit
 
-declare class PptxGenJS {
+declare class DeckKit {
 	/**
 	 * PptxGenJS Library Version
 	 * @type {string}
@@ -19,14 +19,14 @@ declare class PptxGenJS {
 	readonly version: string
 
 	// Exposed prop types
-	readonly presLayout: PptxGenJS.PresLayout
-	readonly AlignH: typeof PptxGenJS.AlignH
-	readonly AlignV: typeof PptxGenJS.AlignV
-	readonly ChartType: typeof PptxGenJS.ChartType
-	readonly OutputType: typeof PptxGenJS.OutputType
-	readonly SchemeColor: typeof PptxGenJS.SchemeColor
-	readonly ShapeType: typeof PptxGenJS.ShapeType
-	readonly PlaceholderType: typeof PptxGenJS.PLACEHOLDER_TYPES
+	readonly presLayout: DeckKit.PresLayout
+	readonly AlignH: typeof DeckKit.AlignH
+	readonly AlignV: typeof DeckKit.AlignV
+	readonly ChartType: typeof DeckKit.ChartType
+	readonly OutputType: typeof DeckKit.OutputType
+	readonly SchemeColor: typeof DeckKit.SchemeColor
+	readonly ShapeType: typeof DeckKit.ShapeType
+	readonly PlaceholderType: typeof DeckKit.PLACEHOLDER_TYPES
 
 	// Presentation Props
 
@@ -76,7 +76,7 @@ declare class PptxGenJS {
 	 * Presentation theme (default fonts)
 	 * @type {ThemeProps}
 	 */
-	theme: PptxGenJS.ThemeProps
+	theme: DeckKit.ThemeProps
 	/**
 	 * Presentation name
 	 * @type {string}
@@ -90,13 +90,13 @@ declare class PptxGenJS {
 	 * @param {WriteBaseProps} props output properties
 	 * @returns {Promise<string | ArrayBuffer | Blob | Uint8Array>} file stream
 	 */
-	stream(props?: PptxGenJS.WriteBaseProps): Promise<string | ArrayBuffer | Blob | Uint8Array>
+	stream(props?: DeckKit.WriteBaseProps): Promise<string | ArrayBuffer | Blob | Uint8Array>
 	/**
 	 * Export the current Presentation as JSZip content with the selected type
 	 * @param {WriteProps} props output properties
 	 * @returns {Promise<string | ArrayBuffer | Blob | Uint8Array>} file content in selected type
 	 */
-	write(props?: PptxGenJS.WriteProps): Promise<string | ArrayBuffer | Blob | Uint8Array>
+	write(props?: DeckKit.WriteProps): Promise<string | ArrayBuffer | Blob | Uint8Array>
 	/**
 	 * Export the current Presentation. Writes file to local file system if `fs` exists, otherwise, initiates download in browsers
 	 * @param {WriteFileProps} props output file properties
@@ -104,46 +104,46 @@ declare class PptxGenJS {
 	 * @example pptx.writeFile({ fileName:'CustomerReport.pptx', compression:true }) // export presentation as "CustomerReport.pptx" compressed (can save up to 30%)
 	 * @returns {Promise<string>} the presentation name
 	 */
-	writeFile(props?: PptxGenJS.WriteFileProps): Promise<string>
+	writeFile(props?: DeckKit.WriteFileProps): Promise<string>
 	/**
 	 * Add a new Section to Presentation
 	 * @param {SectionProps} props section properties
 	 * @example pptx.addSection({ title:'Charts' });
 	 */
-	addSection(props: PptxGenJS.SectionProps): void
+	addSection(props: DeckKit.SectionProps): void
 	/**
 	 * Add a new Slide to Presentation
 	 * @param {AddSlideProps} props slide options
 	 * @returns {Slide} the new Slide
 	 */
-	addSlide(props?: PptxGenJS.AddSlideProps): PptxGenJS.Slide
+	addSlide(props?: DeckKit.AddSlideProps): DeckKit.Slide
 	/**
 	 * Add a new Slide to Presentation
 	 * @param {string} masterName master slide name
 	 * @returns {Slide} the new Slide
 	 * @deprecated use `addSlide(IAddSlideOptions)`
 	 */
-	addSlide(masterName?: string): PptxGenJS.Slide
+	addSlide(masterName?: string): DeckKit.Slide
 	/**
 	 * Create a custom Slide Layout in any size
 	 * @param {PresLayout} layout an object with user-defined w/h
 	 * @example pptx.defineLayout({ name:'A3', width:16.5, height:11.7 });
 	 */
-	defineLayout(layout: PptxGenJS.PresLayout): void
+	defineLayout(layout: DeckKit.PresLayout): void
 	/**
 	 * Create a new slide master [layout] for the Presentation
 	 * @param {SlideMasterProps} props layout definition
 	 */
-	defineSlideMaster(props: PptxGenJS.SlideMasterProps): void
+	defineSlideMaster(props: DeckKit.SlideMasterProps): void
 	/**
 	 * Reproduces an HTML table as a PowerPoint table - including column widths, style, etc. - creates 1 or more slides as needed
 	 * @param {string} eleId table HTML element ID
 	 * @param {TableToSlidesProps} props generation options
 	 */
-	tableToSlides(eleId: string, props?: PptxGenJS.TableToSlidesProps): void
+	tableToSlides(eleId: string, props?: DeckKit.TableToSlidesProps): void
 }
 
-declare namespace PptxGenJS {
+declare namespace DeckKit {
 	// Exported enums for module apps
 	// @example: pptxgen.ShapeType.rect
 	export enum AlignH {

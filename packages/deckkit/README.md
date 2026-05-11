@@ -1,21 +1,21 @@
-# @artifact-kit/pptxgenjs
+# @artifact-kit/deckkit
 
-Artifact Kit's Node.js-focused fork of [PptxGenJS](https://github.com/gitbrent/PptxGenJS).
+Artifact Kit's core library for generating editable PowerPoint decks.
 
-This package currently starts from the PptxGenJS `4.0.1` implementation and keeps its MIT license notice. Future Artifact Kit changes will happen in this package.
+This package currently starts from the PptxGenJS `4.0.1` implementation and keeps its MIT license notice.
 
 ## Install
 
 ```bash
-pnpm add @artifact-kit/pptxgenjs
+pnpm add @artifact-kit/deckkit
 ```
 
 ## Usage
 
 ```ts
-import pptxgen from '@artifact-kit/pptxgenjs'
+import DeckKit from '@artifact-kit/deckkit'
 
-const pptx = new pptxgen()
+const pptx = new DeckKit()
 const slide = pptx.addSlide()
 slide.addText('Hello from Artifact Kit', { x: 1, y: 1, w: 8, h: 1 })
 await pptx.writeFile({ fileName: 'example.pptx' })

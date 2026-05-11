@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   build: {
     lib: {
-      entry: 'src/pptxgen.ts',
+      entry: 'src/deckkit.ts',
       formats: ['es', 'cjs'],
       fileName: format => (format === 'es' ? 'index.js' : 'index.cjs'),
     },
