@@ -5,13 +5,13 @@
     "moduleResolution": "Bundler",
     "strict": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "@artifact-kit/pptxgenjs-jsx",
+    "jsxImportSource": "@artifact-kit/deckkit-jsx",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "rootDir": "src",
     "outDir": "dist/types",
-    "lib": ["ES2020", "DOM"],
+    "lib": ["ES2020"],
     "skipLibCheck": true
   },
   "include": ["src"]

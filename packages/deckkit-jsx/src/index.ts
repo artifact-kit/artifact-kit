@@ -1,7 +1,6 @@
-export { default as PptxGenJS } from "pptxgenjs";
+export { default as DeckKit } from "@artifact-kit/deckkit";
 export * from "./components";
 export * from "./core";
 export * from "./jsx-runtime";
-export * from "./measure";
 export * from "./runtime";
 export * from "./schema";

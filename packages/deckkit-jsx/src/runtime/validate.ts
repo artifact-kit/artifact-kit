@@ -7,7 +7,7 @@ export type ValidationIssue = {
   level: "error" | "warning";
 };
 
-const DECK_CHILDREN = new Set(["Layout", "Master", "Section", "Slide", "TableToSlides", "Raw", "Fragment"]);
+const DECK_CHILDREN = new Set(["Layout", "Master", "Section", "Slide", "Raw", "Fragment"]);
 const SECTION_CHILDREN = new Set(["Slide", "Fragment"]);
 const SLIDE_CHILDREN = new Set([
   "Text",

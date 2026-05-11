@@ -1,8 +1,8 @@
-import type PptxGenJS from "pptxgenjs";
+import type DeckKit from "@artifact-kit/deckkit";
 import type { PptxChildren } from "../core";
 
-export type PptxPresentation = PptxGenJS;
-export type PptxSlide = PptxGenJS.Slide;
+export type PptxPresentation = DeckKit;
+export type PptxSlide = DeckKit.Slide;
 
 export type DeckProps = {
   /** Presentation title metadata. */
@@ -18,51 +18,51 @@ export type DeckProps = {
   /** Enable right-to-left mode for the whole presentation. */
   rtlMode?: boolean;
   /** Default theme fonts. Maps to `pptx.theme`. */
-  theme?: PptxGenJS.ThemeProps;
+  theme?: DeckKit.ThemeProps;
   /** Built-in layout name or custom layout object. Use `layouts` for additional custom layouts. */
-  layout?: string | PptxGenJS.PresLayout;
+  layout?: string | DeckKit.PresLayout;
   /** Additional custom layouts passed to `pptx.defineLayout`. */
-  layouts?: PptxGenJS.PresLayout[];
+  layouts?: DeckKit.PresLayout[];
   /** Master slides passed to `pptx.defineSlideMaster`. */
-  masters?: PptxGenJS.SlideMasterProps[];
+  masters?: DeckKit.SlideMasterProps[];
   /** Presentation sections passed to `pptx.addSection`. */
-  sections?: PptxGenJS.SectionProps[];
+  sections?: DeckKit.SectionProps[];
   children?: PptxChildren;
 };
 
-export type SlideProps = Partial<Pick<PptxGenJS.PresSlide, "background" | "color" | "hidden" | "slideNumber">> &
-  PptxGenJS.AddSlideProps & {
+export type SlideProps = Partial<Pick<DeckKit.PresSlide, "background" | "color" | "hidden" | "slideNumber">> &
+  DeckKit.AddSlideProps & {
     children?: PptxChildren;
   };
 
-export type LayoutProps = PptxGenJS.PresLayout;
+export type LayoutProps = DeckKit.PresLayout;
 
-export type SectionProps = PptxGenJS.SectionProps & {
+export type SectionProps = DeckKit.SectionProps & {
   children?: PptxChildren;
 };
 
-export type MasterProps = PptxGenJS.SlideMasterProps & {
+export type MasterProps = DeckKit.SlideMasterProps & {
   children?: PptxChildren;
 };
 
-export type TextRunProps = PptxGenJS.TextProps;
+export type TextRunProps = DeckKit.TextProps;
 
-export type TextProps = Omit<PptxGenJS.TextPropsOptions, "children"> & {
+export type TextProps = Omit<DeckKit.TextPropsOptions, "children"> & {
   /** Text string passed as first argument to `slide.addText`. Children strings are joined when `text` is omitted. */
-  text?: string | PptxGenJS.TextProps[];
-  /** Rich text runs passed as first argument to `slide.addText`. Same shape as PptxGenJS `TextProps[]`. */
-  runs?: PptxGenJS.TextProps[];
+  text?: string | DeckKit.TextProps[];
+  /** Rich text runs passed as first argument to `slide.addText`. Same shape as DeckKit `TextProps[]`. */
+  runs?: DeckKit.TextProps[];
   /** Optional nested `<TextRun />` nodes or plain strings. */
   children?: PptxChildren;
   /** Base options object merged with top-level option props. Top-level props win. */
-  options?: PptxGenJS.TextPropsOptions;
+  options?: DeckKit.TextPropsOptions;
 };
 
-export type ShapeProps = Omit<PptxGenJS.ShapeProps, "children"> & {
+export type ShapeProps = Omit<DeckKit.ShapeProps, "children"> & {
   /** Shape type passed as first argument to `slide.addShape`. Example: `rect`, `ellipse`, `roundRect`, `line`. */
-  shape: PptxGenJS.SHAPE_NAME;
+  shape: DeckKit.SHAPE_NAME;
   /** Base options object merged with top-level option props. Top-level props win. */
-  options?: PptxGenJS.ShapeProps;
+  options?: DeckKit.ShapeProps;
 };
 
 export type LineProps = Omit<ShapeProps, "shape">;
@@ -78,9 +78,9 @@ export type LineBetweenProps = Omit<LineProps, "x" | "y" | "w" | "h" | "flipH" |
   y2: number;
 };
 
-export type ShapeOptionsProps = Omit<PptxGenJS.ShapeProps, "children"> & {
+export type ShapeOptionsProps = Omit<DeckKit.ShapeProps, "children"> & {
   /** Base options object merged with top-level option props. Top-level props win. */
-  options?: PptxGenJS.ShapeProps;
+  options?: DeckKit.ShapeProps;
 };
 
 export type RectProps = ShapeOptionsProps;
@@ -110,15 +110,15 @@ export type BlockArcProps = ArcProps & {
 export type PieShapeProps = ArcProps;
 
 export type CustomGeometryPoint =
-  | { x: PptxGenJS.Coord; y: PptxGenJS.Coord; moveTo?: boolean }
-  | { x: PptxGenJS.Coord; y: PptxGenJS.Coord; curve: { type: "arc"; hR: PptxGenJS.Coord; wR: PptxGenJS.Coord; stAng: number; swAng: number } }
-  | { x: PptxGenJS.Coord; y: PptxGenJS.Coord; curve: { type: "cubic"; x1: PptxGenJS.Coord; y1: PptxGenJS.Coord; x2: PptxGenJS.Coord; y2: PptxGenJS.Coord } }
-  | { x: PptxGenJS.Coord; y: PptxGenJS.Coord; curve: { type: "quadratic"; x1: PptxGenJS.Coord; y1: PptxGenJS.Coord } }
+  | { x: DeckKit.Coord; y: DeckKit.Coord; moveTo?: boolean }
+  | { x: DeckKit.Coord; y: DeckKit.Coord; curve: { type: "arc"; hR: DeckKit.Coord; wR: DeckKit.Coord; stAng: number; swAng: number } }
+  | { x: DeckKit.Coord; y: DeckKit.Coord; curve: { type: "cubic"; x1: DeckKit.Coord; y1: DeckKit.Coord; x2: DeckKit.Coord; y2: DeckKit.Coord } }
+  | { x: DeckKit.Coord; y: DeckKit.Coord; curve: { type: "quadratic"; x1: DeckKit.Coord; y1: DeckKit.Coord } }
   | { close: true };
 
 export type CustomGeometryProps = ShapeOptionsProps & {
   /**
-   * Custom geometry path points passed to PptxGenJS `custGeom`.
+   * Custom geometry path points passed to DeckKit `custGeom`.
    * Convert SVG path commands before passing them here:
    * `M` -> `{ x, y, moveTo:true }`, `L` -> `{ x, y }`, `C` -> cubic curve,
    * `Q` -> quadratic curve, `Z` -> `{ close:true }`.
@@ -128,23 +128,23 @@ export type CustomGeometryProps = ShapeOptionsProps & {
   points: CustomGeometryPoint[];
 };
 
-export type ImageProps = PptxGenJS.ImageProps & {
+export type ImageProps = DeckKit.ImageProps & {
   /** Base options object merged with top-level option props. Top-level props win. */
-  options?: PptxGenJS.ImageProps;
+  options?: DeckKit.ImageProps;
 };
 
-export type MediaProps = PptxGenJS.MediaProps & {
+export type MediaProps = DeckKit.MediaProps & {
   /** Base options object merged with top-level option props. Top-level props win. */
-  options?: PptxGenJS.MediaProps;
+  options?: DeckKit.MediaProps;
 };
 
-export type ChartProps = Omit<PptxGenJS.IChartOpts, "children"> & {
+export type ChartProps = Omit<DeckKit.IChartOpts, "children"> & {
   /** Chart type or multi-chart descriptor passed as first argument to `slide.addChart`. */
-  type: PptxGenJS.CHART_NAME | PptxGenJS.IChartMulti[];
+  type: DeckKit.CHART_NAME | DeckKit.IChartMulti[];
   /** Chart series data passed as second argument to `slide.addChart`. */
-  data: PptxGenJS.OptsChartData[];
+  data: DeckKit.OptsChartData[];
   /** Base chart options merged with top-level option props. Top-level props win. */
-  options?: PptxGenJS.IChartOpts;
+  options?: DeckKit.IChartOpts;
 };
 
 export type TypedChartProps = Omit<ChartProps, "type">;
@@ -158,26 +158,26 @@ export type PieChartProps = TypedChartProps;
 export type RadarChartProps = TypedChartProps;
 export type ScatterChartProps = TypedChartProps;
 
-export type TableCellProps = PptxGenJS.TableCellProps & {
+export type TableCellProps = DeckKit.TableCellProps & {
   /** Cell text. Children strings are joined when `text` is omitted. */
-  text?: string | PptxGenJS.TableCell[];
+  text?: string | DeckKit.TableCell[];
   children?: PptxChildren;
   /** Base options object merged with top-level option props. Top-level props win. */
-  options?: PptxGenJS.TableCellProps;
+  options?: DeckKit.TableCellProps;
 };
 
 export type TableRowProps = {
   /** Optional direct row data. When omitted, nested `<TableCell />` nodes are collected. */
-  cells?: PptxGenJS.TableRow;
+  cells?: DeckKit.TableRow;
   children?: PptxChildren;
 };
 
-export type TableProps = Omit<PptxGenJS.TableProps, "children"> & {
+export type TableProps = Omit<DeckKit.TableProps, "children"> & {
   /** Table rows passed as first argument to `slide.addTable`. */
-  rows?: PptxGenJS.TableRow[];
+  rows?: DeckKit.TableRow[];
   children?: PptxChildren;
   /** Base options object merged with top-level option props. Top-level props win. */
-  options?: PptxGenJS.TableProps;
+  options?: DeckKit.TableProps;
 };
 
 export type NotesProps = {
@@ -188,21 +188,14 @@ export type NotesProps = {
 
 export type PlaceholderProps = {
   /** Placeholder options used inside `defineSlideMaster({ objects })`. */
-  options: PptxGenJS.PlaceholderProps;
+  options: DeckKit.PlaceholderProps;
   /** Placeholder text shown until edited. Children strings are joined when `text` is omitted. */
   text?: string;
   children?: PptxChildren;
 };
 
-export type TableToSlidesProps = PptxGenJS.TableToSlidesProps & {
-  /** HTML table element id passed to `pptx.tableToSlides`. */
-  eleId: string;
-  /** Base options object merged with top-level option props. Top-level props win. */
-  options?: PptxGenJS.TableToSlidesProps;
-};
-
 export type RawProps = {
-  /** Escape hatch for unsupported or newly added PptxGenJS APIs. */
+  /** Escape hatch for unsupported or newly added DeckKit APIs. */
   render: (context: RenderContext) => void | Promise<void>;
 };
 

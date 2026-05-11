@@ -56,7 +56,6 @@ export type PptxComponentName =
   | "TableCell"
   | "Notes"
   | "Placeholder"
-  | "TableToSlides"
   | "Raw";
 
 export * from "./charts";

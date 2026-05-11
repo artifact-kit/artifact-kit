@@ -1,4 +1,4 @@
-import PptxGenJS from "pptxgenjs";
+import DeckKit from "@artifact-kit/deckkit";
 import { isPptxNode, type PptxChild, type PptxNode } from "../core";
 import type {
   ChartProps,
@@ -17,24 +17,24 @@ import type {
   TableCellProps,
   TableProps,
   TableRowProps,
-  TableToSlidesProps,
   TextProps,
   TextRunProps,
 } from "../components";
-import type PptxGenJSType from "pptxgenjs";
+type DeckKitInstance = DeckKit;
 
 export type CreatePptxOptions = {
-  /** Reuse an existing PptxGenJS instance instead of creating a new one. */
-  pptx?: PptxGenJSType;
+  /** Reuse an existing DeckKit instance instead of creating a new one. */
+  pptx?: DeckKitInstance;
 };
 
-export type RenderPptxOptions = PptxGenJS.WriteFileProps & CreatePptxOptions;
+export type RenderPptxOptions = DeckKit.WriteFileProps & CreatePptxOptions;
 
-export type WritePptxOptions = PptxGenJS.WriteProps & CreatePptxOptions;
+export type WritePptxOptions = DeckKit.WriteProps & CreatePptxOptions;
+export type WritePptxResult = Awaited<ReturnType<DeckKitInstance["write"]>>;
 
 type RenderScope = {
-  pptx: PptxGenJSType;
-  slide?: PptxGenJS.Slide;
+  pptx: DeckKitInstance;
+  slide?: DeckKit.Slide;
 };
 
 const OPTION_CONTROL_KEYS = new Set(["children", "options", "text", "runs", "shape", "data", "rows", "cells", "eleId", "render"]);
@@ -84,8 +84,8 @@ const SHAPE_NODE_TYPES = new Set([
   "Plus",
 ]);
 
-export function createPptx(root: PptxNode, options: CreatePptxOptions = {}): PptxGenJSType {
-  const pptx = options.pptx ?? new PptxGenJS();
+export function createPptx(root: PptxNode, options: CreatePptxOptions = {}): DeckKitInstance {
+  const pptx = options.pptx ?? new DeckKit();
   const deck = root.type === "Deck" ? root : undefined;
 
   if (deck) {
@@ -108,7 +108,7 @@ export async function renderPptx(root: PptxNode, options: RenderPptxOptions = {}
   return pptx.writeFile(writeOptions);
 }
 
-export async function writePptx(root: PptxNode, options: WritePptxOptions = {}): Promise<string | ArrayBuffer | Blob | Uint8Array> {
+export async function writePptx(root: PptxNode, options: WritePptxOptions = {}): Promise<WritePptxResult> {
   const pptx = createPptx(root, options);
   const { pptx: _pptx, ...writeOptions } = options;
   return pptx.write(writeOptions);
@@ -117,7 +117,7 @@ export async function writePptx(root: PptxNode, options: WritePptxOptions = {}):
 export const render = renderPptx;
 export const write = writePptx;
 
-function applyDeckProps(pptx: PptxGenJSType, props: DeckProps): void {
+function applyDeckProps(pptx: DeckKitInstance, props: DeckProps): void {
   props.layouts?.forEach((layout) => pptx.defineLayout(layout));
   props.sections?.forEach((section) => pptx.addSection(section));
   props.masters?.forEach((master) => pptx.defineSlideMaster(master));
@@ -142,7 +142,7 @@ function renderDeckChildren(deck: PptxNode, scope: RenderScope): void {
   for (const child of elementChildren(deck)) {
     switch (child.type) {
       case "Layout":
-        scope.pptx.defineLayout(child.props as unknown as PptxGenJS.PresLayout);
+        scope.pptx.defineLayout(child.props as unknown as DeckKit.PresLayout);
         break;
       case "Master":
         scope.pptx.defineSlideMaster(resolveMasterProps(child));
@@ -152,9 +152,6 @@ function renderDeckChildren(deck: PptxNode, scope: RenderScope): void {
         break;
       case "Slide":
         renderSlideNode(child, scope);
-        break;
-      case "TableToSlides":
-        renderTableToSlidesNode(child, scope);
         break;
       case "Raw":
         void (child.props as RawProps).render({ pptx: scope.pptx, node: child });
@@ -246,23 +243,23 @@ function renderSlideChild(node: PptxNode, scope: RenderScope): void {
   }
 }
 
-function renderTextNode(node: PptxNode, slide: PptxGenJS.Slide): void {
+function renderTextNode(node: PptxNode, slide: DeckKit.Slide): void {
   const props = node.props as TextProps;
   const text = cloneForPptx(props.runs ?? collectTextRuns(node) ?? props.text ?? resolveTextContent(node));
-  slide.addText(text as string | PptxGenJS.TextProps[], mergeOptions(props.options, props));
+  slide.addText(text as string | DeckKit.TextProps[], mergeOptions(props.options, props));
 }
 
-function renderShapeNode(node: PptxNode, slide: PptxGenJS.Slide): void {
+function renderShapeNode(node: PptxNode, slide: DeckKit.Slide): void {
   const props = node.props as ShapeProps;
   slide.addShape(props.shape, mergeOptions(props.options, props, ["shape"]));
 }
 
-function renderLineNode(node: PptxNode, slide: PptxGenJS.Slide): void {
+function renderLineNode(node: PptxNode, slide: DeckKit.Slide): void {
   const props = node.props as LineProps;
   slide.addShape("line", mergeOptions(props.options, props));
 }
 
-function renderLineBetweenNode(node: PptxNode, slide: PptxGenJS.Slide): void {
+function renderLineBetweenNode(node: PptxNode, slide: DeckKit.Slide): void {
   const props = node.props as LineBetweenProps;
   const x = Math.min(props.x1, props.x2);
   const y = Math.min(props.y1, props.y2);
@@ -280,33 +277,28 @@ function renderLineBetweenNode(node: PptxNode, slide: PptxGenJS.Slide): void {
   });
 }
 
-function renderImageNode(node: PptxNode, slide: PptxGenJS.Slide): void {
+function renderImageNode(node: PptxNode, slide: DeckKit.Slide): void {
   const props = node.props as ImageProps;
   slide.addImage(mergeOptions(props.options, props));
 }
 
-function renderMediaNode(node: PptxNode, slide: PptxGenJS.Slide): void {
+function renderMediaNode(node: PptxNode, slide: DeckKit.Slide): void {
   const props = node.props as MediaProps;
   slide.addMedia(mergeOptions(props.options, props));
 }
 
-function renderChartNode(node: PptxNode, slide: PptxGenJS.Slide): void {
+function renderChartNode(node: PptxNode, slide: DeckKit.Slide): void {
   const props = node.props as ChartProps;
   slide.addChart(props.type, cloneForPptx(props.data), mergeOptions(props.options, props, ["type", "data"]));
 }
 
-function renderTableNode(node: PptxNode, slide: PptxGenJS.Slide): void {
+function renderTableNode(node: PptxNode, slide: DeckKit.Slide): void {
   const props = node.props as TableProps;
   const rows = cloneForPptx(props.rows ?? elementChildren(node).map(resolveTableRowNode));
   slide.addTable(rows, mergeOptions(props.options, props));
 }
 
-function renderTableToSlidesNode(node: PptxNode, scope: RenderScope): void {
-  const props = node.props as TableToSlidesProps;
-  scope.pptx.tableToSlides(props.eleId, mergeOptions(props.options, props, ["eleId"]));
-}
-
-function resolveTableRowNode(node: PptxNode): PptxGenJS.TableRow {
+function resolveTableRowNode(node: PptxNode): DeckKit.TableRow {
   if (node.type !== "TableRow") {
     throw new Error(`Table children must be TableRow nodes. Got ${node.type}.`);
   }
@@ -315,7 +307,7 @@ function resolveTableRowNode(node: PptxNode): PptxGenJS.TableRow {
   return cloneForPptx(props.cells ?? elementChildren(node).map(resolveTableCellNode));
 }
 
-function resolveTableCellNode(node: PptxNode): PptxGenJS.TableCell {
+function resolveTableCellNode(node: PptxNode): DeckKit.TableCell {
   if (node.type !== "TableCell") {
     throw new Error(`TableRow children must be TableCell nodes. Got ${node.type}.`);
   }
@@ -327,7 +319,7 @@ function resolveTableCellNode(node: PptxNode): PptxGenJS.TableCell {
   };
 }
 
-function resolveMasterProps(node: PptxNode): PptxGenJS.SlideMasterProps {
+function resolveMasterProps(node: PptxNode): DeckKit.SlideMasterProps {
   const props = node.props as unknown as MasterProps;
   const { children: _children, objects = [], ...rest } = props;
   const childObjects = elementChildren(node).map(resolveMasterObject);
@@ -338,7 +330,7 @@ function resolveMasterProps(node: PptxNode): PptxGenJS.SlideMasterProps {
   };
 }
 
-function resolveMasterObject(node: PptxNode): NonNullable<PptxGenJS.SlideMasterProps["objects"]>[number] {
+function resolveMasterObject(node: PptxNode): NonNullable<DeckKit.SlideMasterProps["objects"]>[number] {
   if (SHAPE_NODE_TYPES.has(node.type)) {
     const props = node.props as ShapeProps;
     const options = mergeOptions(props.options, props, ["shape"]);
@@ -387,7 +379,7 @@ function resolveMasterObject(node: PptxNode): NonNullable<PptxGenJS.SlideMasterP
   }
 }
 
-function collectTextRuns(node: PptxNode): PptxGenJS.TextProps[] | undefined {
+function collectTextRuns(node: PptxNode): DeckKit.TextProps[] | undefined {
   const runs = elementChildren(node)
     .filter((child) => child.type === "TextRun")
     .map((child) => cloneForPptx(child.props as TextRunProps));

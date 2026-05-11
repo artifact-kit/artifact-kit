@@ -1,0 +1,68 @@
+{
+  "name": "@artifact-kit/deckkit-jsx",
+  "version": "0.1.6",
+  "description": "JSX declaration layer for DeckKit.",
+  "license": "MIT",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/artifact-kit/deckkit-jsx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/artifact-kit/deckkit-jsx/issues"
+  },
+  "homepage": "https://github.com/artifact-kit/deckkit-jsx#readme",
+  "keywords": [
+    "pptx",
+    "deckkit",
+    "powerpoint",
+    "jsx",
+    "typescript",
+    "llm",
+    "presentation",
+    "slides"
+  ],
+  "type": "module",
+  "packageManager": "pnpm@10.29.3",
+  "main": "./dist/deckkit-jsx.cjs",
+  "module": "./dist/deckkit-jsx.es.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "dist",
+    "package.json"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/deckkit-jsx.es.js",
+      "require": "./dist/deckkit-jsx.cjs"
+    },
+    "./jsx-runtime": {
+      "types": "./dist/types/jsx-runtime.d.ts",
+      "import": "./dist/jsx-runtime.es.js",
+      "require": "./dist/jsx-runtime.cjs"
+    },
+    "./jsx-dev-runtime": {
+      "types": "./dist/types/jsx-runtime.d.ts",
+      "import": "./dist/jsx-runtime.es.js",
+      "require": "./dist/jsx-runtime.cjs"
+    }
+  },
+  "scripts": {
+    "build": "pnpm typecheck && node scripts/build.mjs && tsc -p tsconfig.types.json",
+    "prepublishOnly": "pnpm build",
+    "test": "pnpm typecheck",
+    "typecheck": "tsc --noEmit"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "@artifact-kit/deckkit": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
+  }
+}

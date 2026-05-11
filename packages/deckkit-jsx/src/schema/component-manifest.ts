@@ -12,11 +12,11 @@ export type ComponentManifest = {
 };
 
 export const componentManifest: ComponentManifest = {
-  generatedFrom: "src/schema/component-manifest.ts plus pptxgenjs/types/index.d.ts",
+  generatedFrom: "src/schema/component-manifest.ts plus @artifact-kit/deckkit types",
   designRule:
-    "Prefer the most specific component available. Use generic Shape, Chart, or Raw only when a newer or rare upstream PptxGenJS API is not covered by a typed component.",
+    "Prefer the most specific component available. Use generic Shape, Chart, or Raw only when a newer or rare upstream DeckKit API is not covered by a typed component.",
   components: [
-    { name: "Deck", category: "root", mapsTo: "new PptxGenJS()", useWhen: "Root presentation.", propsInterface: "DeckProps" },
+    { name: "Deck", category: "root", mapsTo: "new DeckKit()", useWhen: "Root presentation.", propsInterface: "DeckProps" },
     { name: "Presentation", category: "root", mapsTo: "Deck alias", useWhen: "Readable alias for Deck.", propsInterface: "DeckProps" },
     { name: "Slide", category: "structure", mapsTo: "pptx.addSlide", useWhen: "Create a slide.", propsInterface: "SlideProps" },
     { name: "Layout", category: "structure", mapsTo: "pptx.defineLayout", useWhen: "Define an additional custom layout.", propsInterface: "LayoutProps" },
@@ -24,7 +24,7 @@ export const componentManifest: ComponentManifest = {
     { name: "Master", category: "structure", mapsTo: "pptx.defineSlideMaster", useWhen: "Define a reusable slide master.", propsInterface: "MasterProps" },
     { name: "Placeholder", category: "structure", mapsTo: "SlideMasterProps.objects[].placeholder", useWhen: "Add a placeholder inside Master.", propsInterface: "PlaceholderProps" },
     { name: "Text", category: "text", mapsTo: "slide.addText", useWhen: "Text box, rich text container, or text inside a shape.", propsInterface: "TextProps" },
-    { name: "TextRun", category: "text", mapsTo: "PptxGenJS.TextProps[] item", useWhen: "Per-run formatting inside Text.", propsInterface: "TextRunProps" },
+    { name: "TextRun", category: "text", mapsTo: "DeckKit.TextProps[] item", useWhen: "Per-run formatting inside Text.", propsInterface: "TextRunProps" },
     { name: "Notes", category: "text", mapsTo: "slide.addNotes", useWhen: "Speaker notes.", propsInterface: "NotesProps" },
     { name: "Rect", category: "shape", mapsTo: "slide.addShape('rect')", useWhen: "Plain rectangle.", propsInterface: "RectProps" },
     { name: "RoundRect", category: "shape", mapsTo: "slide.addShape('roundRect')", useWhen: "Rounded rectangle; supports rectRadius.", propsInterface: "RoundRectProps" },
@@ -79,9 +79,9 @@ export const componentManifest: ComponentManifest = {
       name: "Shape",
       category: "escape-hatch",
       mapsTo: "slide.addShape(shape, options)",
-      useWhen: "Any PptxGenJS shape not exposed as a dedicated component.",
+      useWhen: "Any DeckKit shape not exposed as a dedicated component.",
       propsInterface: "ShapeProps",
-      notes: ["Use PptxGenJS.SHAPE_NAME values from the generated reference table."],
+      notes: ["Use DeckKit.SHAPE_NAME values from the generated reference table."],
     },
     { name: "AreaChart", category: "chart", mapsTo: "slide.addChart('area')", useWhen: "Area chart.", propsInterface: "AreaChartProps" },
     { name: "BarChart", category: "chart", mapsTo: "slide.addChart('bar')", useWhen: "Bar or column chart.", propsInterface: "BarChartProps" },
@@ -96,9 +96,8 @@ export const componentManifest: ComponentManifest = {
     { name: "Image", category: "media", mapsTo: "slide.addImage", useWhen: "Image by path or data URI/base64.", propsInterface: "ImageProps" },
     { name: "Media", category: "media", mapsTo: "slide.addMedia", useWhen: "Audio, video, or online media.", propsInterface: "MediaProps" },
     { name: "Table", category: "table", mapsTo: "slide.addTable", useWhen: "PowerPoint table.", propsInterface: "TableProps" },
-    { name: "TableRow", category: "table", mapsTo: "PptxGenJS.TableRow", useWhen: "Declarative row inside Table.", propsInterface: "TableRowProps" },
-    { name: "TableCell", category: "table", mapsTo: "PptxGenJS.TableCell", useWhen: "Declarative cell inside TableRow.", propsInterface: "TableCellProps" },
-    { name: "TableToSlides", category: "table", mapsTo: "pptx.tableToSlides", useWhen: "Convert an HTML table in browser/runtime DOM.", propsInterface: "TableToSlidesProps" },
-    { name: "Raw", category: "escape-hatch", mapsTo: "custom render callback", useWhen: "Newest or unsupported PptxGenJS APIs.", propsInterface: "RawProps" },
+    { name: "TableRow", category: "table", mapsTo: "DeckKit.TableRow", useWhen: "Declarative row inside Table.", propsInterface: "TableRowProps" },
+    { name: "TableCell", category: "table", mapsTo: "DeckKit.TableCell", useWhen: "Declarative cell inside TableRow.", propsInterface: "TableCellProps" },
+    { name: "Raw", category: "escape-hatch", mapsTo: "custom render callback", useWhen: "Newest or unsupported DeckKit APIs.", propsInterface: "RawProps" },
   ],
 };
