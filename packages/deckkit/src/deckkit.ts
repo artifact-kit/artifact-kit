@@ -97,6 +97,10 @@ import * as genObj from './gen-objects'
 import * as genMedia from './gen-media'
 import * as genTable from './gen-tables'
 import * as genXml from './gen-xml'
+import { withXmlFillRenderers } from './gen-utils'
+import type { DeckKitFillRenderer, DeckKitPlugin } from './plugin'
+
+export type { DeckKitFillProps, DeckKitFillRenderer, DeckKitPlugin, DeckKitPluginContext } from './plugin'
 
 const VERSION = '4.0.1'
 
@@ -243,6 +247,8 @@ export default class DeckKit implements IPresentationProps {
 		return this._sections
 	}
 
+	private readonly _fillRenderers: DeckKitFillRenderer[] = []
+
 	/** slide layout definition objects, used for generating slide layout files */
 	private readonly _slideLayouts: SlideLayout[]
 	public get slideLayouts(): SlideLayout[] {
@@ -379,6 +385,15 @@ export default class DeckKit implements IPresentationProps {
 		}
 	}
 
+	use<TOptions>(plugin: DeckKitPlugin<TOptions>, options?: TOptions): this {
+		plugin.setup({
+			addFillRenderer: renderer => {
+				this._fillRenderers.push(renderer)
+			},
+		}, options)
+		return this
+	}
+
 	/**
 	 * Provides an API for `addTableDefinition` to create slides as needed for auto-paging
 	 * @param {AddSlideProps} options - slide masterName and/or sectionTitle
@@ -492,60 +507,62 @@ export default class DeckKit implements IPresentationProps {
 
 		// STEP 2: Wait for Promises (if any) then generate the PPTX file
 		return await Promise.all(arrMediaPromises).then(async () => {
-			// A: Add empty placeholder objects to slides that don't already have them
-			this.slides.forEach(slide => {
-				if (slide._slideLayout) genObj.addPlaceholdersToSlideLayouts(slide)
-			})
+			withXmlFillRenderers(this._fillRenderers, () => {
+				// A: Add empty placeholder objects to slides that don't already have them
+				this.slides.forEach(slide => {
+					if (slide._slideLayout) genObj.addPlaceholdersToSlideLayouts(slide)
+				})
 
-			// B: Add all required folders and files
-			zip.folder('_rels')
-			zip.folder('docProps')
-			zip.folder('ppt').folder('_rels')
-			zip.folder('ppt/charts').folder('_rels')
-			zip.folder('ppt/embeddings')
-			zip.folder('ppt/media')
-			zip.folder('ppt/slideLayouts').folder('_rels')
-			zip.folder('ppt/slideMasters').folder('_rels')
-			zip.folder('ppt/slides').folder('_rels')
-			zip.folder('ppt/theme')
-			zip.folder('ppt/notesMasters').folder('_rels')
-			zip.folder('ppt/notesSlides').folder('_rels')
-			zip.file('[Content_Types].xml', genXml.makeXmlContTypes(this.slides, this.slideLayouts, this.masterSlide)) // TODO: pass only `this` like below! 20200206
-			zip.file('_rels/.rels', genXml.makeXmlRootRels())
-			zip.file('docProps/app.xml', genXml.makeXmlApp(this.slides, this.company)) // TODO: pass only `this` like below! 20200206
-			zip.file('docProps/core.xml', genXml.makeXmlCore(this.title, this.subject, this.author, this.revision)) // TODO: pass only `this` like below! 20200206
-			zip.file('ppt/_rels/presentation.xml.rels', genXml.makeXmlPresentationRels(this.slides))
-			zip.file('ppt/theme/theme1.xml', genXml.makeXmlTheme(this))
-			zip.file('ppt/presentation.xml', genXml.makeXmlPresentation(this))
-			zip.file('ppt/presProps.xml', genXml.makeXmlPresProps())
-			zip.file('ppt/tableStyles.xml', genXml.makeXmlTableStyles())
-			zip.file('ppt/viewProps.xml', genXml.makeXmlViewProps())
+				// B: Add all required folders and files
+				zip.folder('_rels')
+				zip.folder('docProps')
+				zip.folder('ppt').folder('_rels')
+				zip.folder('ppt/charts').folder('_rels')
+				zip.folder('ppt/embeddings')
+				zip.folder('ppt/media')
+				zip.folder('ppt/slideLayouts').folder('_rels')
+				zip.folder('ppt/slideMasters').folder('_rels')
+				zip.folder('ppt/slides').folder('_rels')
+				zip.folder('ppt/theme')
+				zip.folder('ppt/notesMasters').folder('_rels')
+				zip.folder('ppt/notesSlides').folder('_rels')
+				zip.file('[Content_Types].xml', genXml.makeXmlContTypes(this.slides, this.slideLayouts, this.masterSlide)) // TODO: pass only `this` like below! 20200206
+				zip.file('_rels/.rels', genXml.makeXmlRootRels())
+				zip.file('docProps/app.xml', genXml.makeXmlApp(this.slides, this.company)) // TODO: pass only `this` like below! 20200206
+				zip.file('docProps/core.xml', genXml.makeXmlCore(this.title, this.subject, this.author, this.revision)) // TODO: pass only `this` like below! 20200206
+				zip.file('ppt/_rels/presentation.xml.rels', genXml.makeXmlPresentationRels(this.slides))
+				zip.file('ppt/theme/theme1.xml', genXml.makeXmlTheme(this))
+				zip.file('ppt/presentation.xml', genXml.makeXmlPresentation(this))
+				zip.file('ppt/presProps.xml', genXml.makeXmlPresProps())
+				zip.file('ppt/tableStyles.xml', genXml.makeXmlTableStyles())
+				zip.file('ppt/viewProps.xml', genXml.makeXmlViewProps())
 
-			// C: Create a Layout/Master/Rel/Slide file for each SlideLayout and Slide
-			this.slideLayouts.forEach((layout, idx) => {
-				zip.file(`ppt/slideLayouts/slideLayout${idx + 1}.xml`, genXml.makeXmlLayout(layout))
-				zip.file(`ppt/slideLayouts/_rels/slideLayout${idx + 1}.xml.rels`, genXml.makeXmlSlideLayoutRel(idx + 1, this.slideLayouts))
-			})
-			this.slides.forEach((slide, idx) => {
-				zip.file(`ppt/slides/slide${idx + 1}.xml`, genXml.makeXmlSlide(slide))
-				zip.file(`ppt/slides/_rels/slide${idx + 1}.xml.rels`, genXml.makeXmlSlideRel(this.slides, this.slideLayouts, idx + 1))
-				// Create all slide notes related items. Notes of empty strings are created for slides which do not have notes specified, to keep track of _rels.
-				zip.file(`ppt/notesSlides/notesSlide${idx + 1}.xml`, genXml.makeXmlNotesSlide(slide))
-				zip.file(`ppt/notesSlides/_rels/notesSlide${idx + 1}.xml.rels`, genXml.makeXmlNotesSlideRel(idx + 1))
-			})
-			zip.file('ppt/slideMasters/slideMaster1.xml', genXml.makeXmlMaster(this.masterSlide, this.slideLayouts))
-			zip.file('ppt/slideMasters/_rels/slideMaster1.xml.rels', genXml.makeXmlMasterRel(this.masterSlide, this.slideLayouts))
-			zip.file('ppt/notesMasters/notesMaster1.xml', genXml.makeXmlNotesMaster())
-			zip.file('ppt/notesMasters/_rels/notesMaster1.xml.rels', genXml.makeXmlNotesMasterRel())
+				// C: Create a Layout/Master/Rel/Slide file for each SlideLayout and Slide
+				this.slideLayouts.forEach((layout, idx) => {
+					zip.file(`ppt/slideLayouts/slideLayout${idx + 1}.xml`, genXml.makeXmlLayout(layout))
+					zip.file(`ppt/slideLayouts/_rels/slideLayout${idx + 1}.xml.rels`, genXml.makeXmlSlideLayoutRel(idx + 1, this.slideLayouts))
+				})
+				this.slides.forEach((slide, idx) => {
+					zip.file(`ppt/slides/slide${idx + 1}.xml`, genXml.makeXmlSlide(slide))
+					zip.file(`ppt/slides/_rels/slide${idx + 1}.xml.rels`, genXml.makeXmlSlideRel(this.slides, this.slideLayouts, idx + 1))
+					// Create all slide notes related items. Notes of empty strings are created for slides which do not have notes specified, to keep track of _rels.
+					zip.file(`ppt/notesSlides/notesSlide${idx + 1}.xml`, genXml.makeXmlNotesSlide(slide))
+					zip.file(`ppt/notesSlides/_rels/notesSlide${idx + 1}.xml.rels`, genXml.makeXmlNotesSlideRel(idx + 1))
+				})
+				zip.file('ppt/slideMasters/slideMaster1.xml', genXml.makeXmlMaster(this.masterSlide, this.slideLayouts))
+				zip.file('ppt/slideMasters/_rels/slideMaster1.xml.rels', genXml.makeXmlMasterRel(this.masterSlide, this.slideLayouts))
+				zip.file('ppt/notesMasters/notesMaster1.xml', genXml.makeXmlNotesMaster())
+				zip.file('ppt/notesMasters/_rels/notesMaster1.xml.rels', genXml.makeXmlNotesMasterRel())
 
-			// D: Create all Rels (images, media, chart data)
-			this.slideLayouts.forEach(layout => {
-				this.createChartMediaRels(layout, zip, arrChartPromises)
+				// D: Create all Rels (images, media, chart data)
+				this.slideLayouts.forEach(layout => {
+					this.createChartMediaRels(layout, zip, arrChartPromises)
+				})
+				this.slides.forEach(slide => {
+					this.createChartMediaRels(slide, zip, arrChartPromises)
+				})
+				this.createChartMediaRels(this.masterSlide, zip, arrChartPromises)
 			})
-			this.slides.forEach(slide => {
-				this.createChartMediaRels(slide, zip, arrChartPromises)
-			})
-			this.createChartMediaRels(this.masterSlide, zip, arrChartPromises)
 
 			// E: Wait for Promises (if any) then generate the PPTX file
 			return await Promise.all(arrChartPromises).then(async () => {

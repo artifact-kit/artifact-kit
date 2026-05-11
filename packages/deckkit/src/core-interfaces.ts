@@ -173,6 +173,7 @@ export interface ShadowProps {
 }
 // used by: shape, table, text
 export interface ShapeFillProps {
+	[key: string]: unknown
 	/**
 	 * Fill color
 	 * - `HexColor` or `ThemeColor`
@@ -191,7 +192,7 @@ export interface ShapeFillProps {
 	 * Fill type
 	 * @default 'solid'
 	 */
-	type?: 'none' | 'solid'
+	type?: 'none' | 'solid' | (string & {})
 
 	/**
 	 * Transparency (percent)

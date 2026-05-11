@@ -10,6 +10,10 @@
 export as namespace DeckKit
 
 export default DeckKit
+export type DeckKitFillProps = DeckKit.FillProps
+export type DeckKitFillRenderer = DeckKit.FillRenderer
+export type DeckKitPlugin<TOptions = unknown> = DeckKit.Plugin<TOptions>
+export type DeckKitPluginContext = DeckKit.PluginContext
 
 declare class DeckKit {
 	/**
@@ -106,6 +110,12 @@ declare class DeckKit {
 	 */
 	writeFile(props?: DeckKit.WriteFileProps): Promise<string>
 	/**
+	 * Register a DeckKit plugin on this presentation instance.
+	 * @param {Plugin} plugin plugin definition
+	 * @param options plugin options
+	 */
+	use<TOptions = unknown>(plugin: DeckKit.Plugin<TOptions>, options?: TOptions): this
+	/**
 	 * Add a new Section to Presentation
 	 * @param {SectionProps} props section properties
 	 * @example pptx.addSection({ title:'Charts' });
@@ -144,6 +154,16 @@ declare class DeckKit {
 }
 
 declare namespace DeckKit {
+	export type FillProps = Color | ShapeFillProps | ShapeLineProps
+	export type FillRenderer = (props: FillProps) => string | null | undefined
+	export interface PluginContext {
+		addFillRenderer(renderer: FillRenderer): void
+	}
+	export interface Plugin<TOptions = unknown> {
+		name?: string
+		setup(context: PluginContext, options?: TOptions): void
+	}
+
 	// Exported enums for module apps
 	// @example: pptxgen.ShapeType.rect
 	export enum AlignH {
@@ -1001,6 +1021,7 @@ declare namespace DeckKit {
 	}
 	// used by: shape, table, text
 	export interface ShapeFillProps {
+		[key: string]: unknown
 		/**
 		 * Fill color
 		 * - `HexColor` or `ThemeColor`
@@ -1019,7 +1040,7 @@ declare namespace DeckKit {
 		 * Fill type
 		 * @default 'solid'
 		 */
-		type?: 'none' | 'solid'
+		type?: 'none' | 'solid' | (string & {})
 
 		/**
 		 * Transparency (percent)

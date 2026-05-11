@@ -4,6 +4,18 @@
 
 import { EMU, REGEX_HEX_COLOR, DEF_FONT_COLOR, ONEPT, SchemeColor, SCHEME_COLORS } from './core-enums'
 import { PresLayout, TextGlowProps, PresSlide, ShapeFillProps, Color, ShapeLineProps, Coord, ShadowProps } from './core-interfaces'
+import type { DeckKitFillRenderer } from './plugin'
+
+const fillRendererStack: DeckKitFillRenderer[][] = []
+
+export function withXmlFillRenderers<T>(renderers: DeckKitFillRenderer[], callback: () => T): T {
+	fillRendererStack.push(renderers)
+	try {
+		return callback()
+	} finally {
+		fillRendererStack.pop()
+	}
+}
 
 /**
  * Translates any type of `x`/`y`/`w`/`h` prop to EMU
@@ -192,6 +204,12 @@ export function genXmlColorSelection (props: Color | ShapeFillProps | ShapeLineP
 	let outText = ''
 
 	if (props) {
+		const activeRenderers = fillRendererStack[fillRendererStack.length - 1] || []
+		for (const renderer of activeRenderers) {
+			const renderedXml = renderer(props)
+			if (renderedXml) return renderedXml
+		}
+
 		if (typeof props === 'string') colorVal = props
 		else {
 			if (props.type) fillType = props.type
