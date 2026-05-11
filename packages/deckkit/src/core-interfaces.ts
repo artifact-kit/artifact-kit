@@ -172,8 +172,8 @@ export interface ShadowProps {
 	rotateWithShape?: boolean
 }
 // used by: shape, table, text
-export interface ShapeFillProps {
-	[key: string]: unknown
+export interface ShapeFillPropsExtension {}
+export interface ShapeFillProps extends ShapeFillPropsExtension {
 	/**
 	 * Fill color
 	 * - `HexColor` or `ThemeColor`

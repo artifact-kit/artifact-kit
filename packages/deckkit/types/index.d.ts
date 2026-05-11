@@ -14,6 +14,8 @@ export type DeckKitFillProps = DeckKit.FillProps
 export type DeckKitFillRenderer = DeckKit.FillRenderer
 export type DeckKitPlugin<TOptions = unknown> = DeckKit.Plugin<TOptions>
 export type DeckKitPluginContext = DeckKit.PluginContext
+export interface ShapeFillPropsExtension {}
+type ModuleShapeFillPropsExtension = ShapeFillPropsExtension
 
 declare class DeckKit {
 	/**
@@ -1020,8 +1022,7 @@ declare namespace DeckKit {
 		rotateWithShape?: boolean
 	}
 	// used by: shape, table, text
-	export interface ShapeFillProps {
-		[key: string]: unknown
+	export interface ShapeFillProps extends ModuleShapeFillPropsExtension {
 		/**
 		 * Fill color
 		 * - `HexColor` or `ThemeColor`

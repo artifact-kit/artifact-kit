@@ -101,6 +101,7 @@ import { withXmlFillRenderers } from './gen-utils'
 import type { DeckKitFillRenderer, DeckKitPlugin } from './plugin'
 
 export type { DeckKitFillProps, DeckKitFillRenderer, DeckKitPlugin, DeckKitPluginContext } from './plugin'
+export type { ShapeFillPropsExtension } from './core-interfaces'
 
 const VERSION = '4.0.1'
 
