@@ -1,0 +1,30 @@
+{
+  "name": "@artifact-kit/pptxgenjs-jsx",
+  "version": "0.0.0",
+  "description": "JSX helpers for generating PowerPoint decks with pptxgenjs.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "echo \"Add build script after source import\"",
+    "clean": "rm -rf dist",
+    "typecheck": "echo \"Add typecheck script after source import\"",
+    "test": "echo \"Add tests after source import\""
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
