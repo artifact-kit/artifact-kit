@@ -1,6 +1,8 @@
 node_modules
 dist
+.tsx-runner
 coverage
 .turbo
 .DS_Store
 *.log
+*.pptx

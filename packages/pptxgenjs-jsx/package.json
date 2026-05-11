@@ -1,30 +1,105 @@
 {
   "name": "@artifact-kit/pptxgenjs-jsx",
-  "version": "0.0.0",
-  "description": "JSX helpers for generating PowerPoint decks with pptxgenjs.",
+  "version": "0.1.6",
+  "description": "LLM-friendly JSX declaration layer for PptxGenJS.",
   "license": "MIT",
-  "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/artifact-kit/pptxgenjs-jsx.git"
   },
+  "bugs": {
+    "url": "https://github.com/artifact-kit/pptxgenjs-jsx/issues"
+  },
+  "homepage": "https://github.com/artifact-kit/pptxgenjs-jsx#readme",
+  "keywords": [
+    "pptx",
+    "pptxgenjs",
+    "powerpoint",
+    "jsx",
+    "typescript",
+    "llm",
+    "presentation",
+    "slides"
+  ],
+  "type": "module",
+  "packageManager": "pnpm@10.29.3",
+  "main": "./dist/pptxgenjs-jsx.cjs",
+  "module": "./dist/pptxgenjs-jsx.es.js",
+  "types": "./dist/types/index.d.ts",
+  "unpkg": "./dist/pptxgenjs-jsx.browser.iife.js",
+  "jsdelivr": "./dist/pptxgenjs-jsx.browser.iife.js",
   "files": [
     "dist",
+    "docs",
+    "examples",
+    "assets",
     "README.md",
-    "LICENSE"
+    "llms.txt",
+    "component-manifest.json",
+    "package.json"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "browser": {
+        "import": "./dist/pptxgenjs-jsx.browser.es.js",
+        "default": "./dist/pptxgenjs-jsx.browser.es.js"
+      },
+      "import": "./dist/pptxgenjs-jsx.es.js",
+      "require": "./dist/pptxgenjs-jsx.cjs"
+    },
+    "./browser": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/pptxgenjs-jsx.browser.es.js"
+    },
+    "./measure": {
+      "types": "./dist/types/measure/index.d.ts",
+      "browser": {
+        "import": "./dist/measure.browser.es.js",
+        "default": "./dist/measure.browser.es.js"
+      },
+      "import": "./dist/measure.es.js",
+      "require": "./dist/measure.cjs"
+    },
+    "./component-manifest.json": "./component-manifest.json",
+    "./jsx-runtime": {
+      "types": "./dist/types/jsx-runtime.d.ts",
+      "browser": {
+        "import": "./dist/jsx-runtime.browser.es.js",
+        "default": "./dist/jsx-runtime.browser.es.js"
+      },
+      "import": "./dist/jsx-runtime.es.js",
+      "require": "./dist/jsx-runtime.cjs"
+    },
+    "./jsx-dev-runtime": {
+      "types": "./dist/types/jsx-runtime.d.ts",
+      "browser": {
+        "import": "./dist/jsx-runtime.browser.es.js",
+        "default": "./dist/jsx-runtime.browser.es.js"
+      },
+      "import": "./dist/jsx-runtime.es.js",
+      "require": "./dist/jsx-runtime.cjs"
+    }
+  },
   "scripts": {
-    "build": "echo \"Add build script after source import\"",
-    "clean": "rm -rf dist",
-    "typecheck": "echo \"Add typecheck script after source import\"",
-    "test": "echo \"Add tests after source import\""
+    "build": "pnpm docs:generate && pnpm typecheck && node scripts/build.mjs && tsc -p tsconfig.types.json",
+    "docs:generate": "node scripts/generate-llm-docs.mjs",
+    "prepublishOnly": "pnpm build",
+    "test": "pnpm build && node scripts/run-tsx-test.mjs test-smoke/test.tsx && node scripts/verify-measure-readers.mjs && node scripts/verify-attention-example.mjs",
+    "test:attention": "pnpm build && node scripts/verify-attention-example.mjs",
+    "test:tsx": "node scripts/run-tsx-test.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "pptxgenjs": "^4.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
   }
 }
