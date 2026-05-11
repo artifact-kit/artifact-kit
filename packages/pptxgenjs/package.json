@@ -1,0 +1,59 @@
+{
+  "name": "@artifact-kit/pptxgenjs",
+  "version": "0.0.0",
+  "description": "Artifact Kit fork of PptxGenJS for Node.js PowerPoint generation.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "author": {
+    "name": "Artifact Kit"
+  },
+  "homepage": "https://github.com/artifact-kit/artifact-kit#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/artifact-kit/artifact-kit.git",
+    "directory": "packages/pptxgenjs"
+  },
+  "keywords": [
+    "artifact-kit",
+    "pptx",
+    "powerpoint",
+    "presentation",
+    "node"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "types",
+    "README.md",
+    "LICENSE",
+    "COMMERCIAL-LICENSE.md",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.8.1",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

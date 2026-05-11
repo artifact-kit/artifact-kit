@@ -4,3 +4,4 @@ coverage
 .turbo
 .DS_Store
 *.log
+references/

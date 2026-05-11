@@ -1,0 +1,17 @@
+Artifact Kit License
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+Artifact Kit packages are licensed under the GNU Affero General Public License
+version 3 or, at your option, any later version.
+
+You may use, modify, and distribute this software under the AGPL. If you use
+the software to provide a network service, the AGPL requires you to offer the
+complete corresponding source code to users of that service.
+
+Commercial licenses are available for organizations that want to use Artifact
+Kit under proprietary terms or without AGPL obligations. Contact the Artifact
+Kit maintainers for commercial licensing.
+
+The full AGPL-3.0 license text is available at:
+https://www.gnu.org/licenses/agpl-3.0.html

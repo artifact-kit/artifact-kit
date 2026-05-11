@@ -1,0 +1,16 @@
+Artifact Kit License
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+This package is licensed under the GNU Affero General Public License version 3
+or, at your option, any later version.
+
+Commercial licenses are available for organizations that want to use this
+package under proprietary terms or without AGPL obligations. Contact the
+Artifact Kit maintainers for commercial licensing.
+
+This package includes code derived from PptxGenJS, which is licensed under MIT.
+See THIRD_PARTY_NOTICES.md for the original copyright and license notice.
+
+The full AGPL-3.0 license text is available at:
+https://www.gnu.org/licenses/agpl-3.0.html
