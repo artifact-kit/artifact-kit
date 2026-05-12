@@ -6,6 +6,7 @@ import { CHART_NAME, SHAPE_NAME } from './core-enums'
 import {
 	AddSlideProps,
 	BackgroundProps,
+	CustomGeometryProps,
 	HexColor,
 	IChartMulti,
 	IChartOpts,
@@ -210,6 +211,8 @@ export default class Slide {
 	 * @param {ShapeProps} options - shape options
 	 * @return {Slide} this Slide
 	 */
+	addShape(shapeName: 'custGeom', options?: CustomGeometryProps): Slide
+	addShape(shapeName: SHAPE_NAME, options?: ShapeProps): Slide
 	addShape(shapeName: SHAPE_NAME, options?: ShapeProps): Slide {
 		// NOTE: As of v3.1.0, <script> users are passing the old shape object from the shapes file (orig to the project)
 		// But React/TypeScript users are passing the shapeName from an enum, which is a simple string, so lets cast

@@ -98,10 +98,11 @@ import * as genMedia from './gen-media'
 import * as genTable from './gen-tables'
 import * as genXml from './gen-xml'
 import { withXmlFillRenderers } from './gen-utils'
+import { addShapeHandler } from './plugin'
 import type { DeckKitFillRenderer, DeckKitPlugin } from './plugin'
 
-export type { DeckKitFillProps, DeckKitFillRenderer, DeckKitPlugin, DeckKitPluginContext } from './plugin'
-export type { ShapeFillPropsExtension } from './core-interfaces'
+export type { DeckKitFillProps, DeckKitFillRenderer, DeckKitPlugin, DeckKitPluginContext, DeckKitShapeHandler, DeckKitShapeHandlerContext } from './plugin'
+export type { CustomGeometryPropsExtension, ShapeFillPropsExtension } from './core-interfaces'
 
 const VERSION = '4.0.1'
 
@@ -391,6 +392,7 @@ export default class DeckKit implements IPresentationProps {
 			addFillRenderer: renderer => {
 				this._fillRenderers.push(renderer)
 			},
+			addShapeHandler,
 		}, options)
 		return this
 	}

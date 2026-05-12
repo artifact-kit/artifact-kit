@@ -47,6 +47,7 @@ import {
 	TextProps,
 	TextPropsOptions,
 } from './core-interfaces'
+import { getShapeHandlers } from './plugin'
 import { getSlidesForTableRows } from './gen-tables'
 import { encodeXmlEntities, getNewRelId, getSmartParseNumber, inch2Emu, valToPts, correctShadowOptions } from './gen-utils'
 
@@ -668,6 +669,26 @@ export function addNotesDefinition(target: PresSlide, notes: string): void {
  */
 export function addShapeDefinition(target: PresSlide, shapeName: SHAPE_NAME, opts: ShapeProps): void {
 	const options = typeof opts === 'object' ? opts : {}
+	const handlers = getShapeHandlers()
+	if (handlers.length > 0) {
+		let handled = false
+		let nextCalled = false
+		const next = () => {
+			nextCalled = true
+			addCoreShapeDefinition(target, shapeName, options)
+		}
+
+		for (const handler of handlers) {
+			nextCalled = false
+			handled = handler({ target, shape: shapeName, options, next }) === true
+			if (handled || nextCalled) return
+		}
+	}
+
+	addCoreShapeDefinition(target, shapeName, options)
+}
+
+function addCoreShapeDefinition(target: PresSlide, shapeName: SHAPE_NAME, options: ShapeProps): void {
 	options.line = options.line || { type: 'none' }
 	const newObject: ISlideObject = {
 		_type: SLIDE_OBJECT_TYPES.text,

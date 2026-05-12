@@ -14,8 +14,12 @@ export type DeckKitFillProps = DeckKit.FillProps
 export type DeckKitFillRenderer = DeckKit.FillRenderer
 export type DeckKitPlugin<TOptions = unknown> = DeckKit.Plugin<TOptions>
 export type DeckKitPluginContext = DeckKit.PluginContext
+export type DeckKitShapeHandler = DeckKit.ShapeHandler
+export type DeckKitShapeHandlerContext = DeckKit.ShapeHandlerContext
 export interface ShapeFillPropsExtension {}
+export interface CustomGeometryPropsExtension {}
 type ModuleShapeFillPropsExtension = ShapeFillPropsExtension
+type ModuleCustomGeometryPropsExtension = CustomGeometryPropsExtension
 
 declare class DeckKit {
 	/**
@@ -158,8 +162,16 @@ declare class DeckKit {
 declare namespace DeckKit {
 	export type FillProps = Color | ShapeFillProps | ShapeLineProps
 	export type FillRenderer = (props: FillProps) => string | null | undefined
+	export interface ShapeHandlerContext {
+		target: PresSlide
+		shape: SHAPE_NAME
+		options: ShapeProps
+		next(): void
+	}
+	export type ShapeHandler = (context: ShapeHandlerContext) => boolean | void
 	export interface PluginContext {
 		addFillRenderer(renderer: FillRenderer): void
+		addShapeHandler(handler: ShapeHandler): void
 	}
 	export interface Plugin<TOptions = unknown> {
 		name?: string
@@ -1516,13 +1528,7 @@ declare namespace DeckKit {
 		 * @see http://www.datypic.com/sc/ooxml/e-a_arcTo-1.html
 		 * @example [{ x: 0, y: 0 }, { x: 10, y: 10 }] // draw a line between those two points
 		 */
-		points?: Array<
-			| { x: Coord, y: Coord, moveTo?: boolean }
-			| { x: Coord, y: Coord, curve: { type: 'arc', hR: Coord, wR: Coord, stAng: number, swAng: number } }
-			| { x: Coord, y: Coord, curve: { type: 'cubic', x1: Coord, y1: Coord, x2: Coord, y2: Coord } }
-			| { x: Coord, y: Coord, curve: { type: 'quadratic', x1: Coord, y1: Coord } }
-			| { close: true }
-		>
+		points?: CustomGeometryPoint[]
 		/**
 		 * Rounded rectangle radius (only for pptx.shapes.ROUNDED_RECTANGLE)
 		 * - values: 0.0 to 1.0
@@ -1564,6 +1570,15 @@ declare namespace DeckKit {
 		 */
 		shapeName?: string
 	}
+
+	export type CustomGeometryPoint =
+		| { x: Coord, y: Coord, moveTo?: boolean }
+		| { x: Coord, y: Coord, curve: { type: 'arc', hR: Coord, wR: Coord, stAng: number, swAng: number } }
+		| { x: Coord, y: Coord, curve: { type: 'cubic', x1: Coord, y1: Coord, x2: Coord, y2: Coord } }
+		| { x: Coord, y: Coord, curve: { type: 'quadratic', x1: Coord, y1: Coord } }
+		| { close: true }
+
+	export interface CustomGeometryProps extends ShapeProps, ModuleCustomGeometryPropsExtension {}
 
 	// tables =========================================================================================
 
@@ -2553,7 +2568,10 @@ declare namespace DeckKit {
 		addImage: Function
 		addMedia: Function
 		addNotes: Function
-		addShape: Function
+		addShape: {
+			(shapeName: 'custGeom', options?: CustomGeometryProps): PresSlide
+			(shapeName: SHAPE_NAME, options?: ShapeProps): PresSlide
+		}
 		addTable: Function
 		addText: Function
 
@@ -2676,6 +2694,7 @@ declare namespace DeckKit {
 		 * @param {ShapeProps} options - shape options
 		 * @return {Slide} this Slide
 		 */
+		addShape(shapeName: 'custGeom', options?: CustomGeometryProps): Slide
 		addShape(shapeName: SHAPE_NAME, options?: ShapeProps): Slide
 		/**
 		 * Add table to Slide

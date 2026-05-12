@@ -109,23 +109,9 @@ export type BlockArcProps = ArcProps & {
 
 export type PieShapeProps = ArcProps;
 
-export type CustomGeometryPoint =
-  | { x: DeckKit.Coord; y: DeckKit.Coord; moveTo?: boolean }
-  | { x: DeckKit.Coord; y: DeckKit.Coord; curve: { type: "arc"; hR: DeckKit.Coord; wR: DeckKit.Coord; stAng: number; swAng: number } }
-  | { x: DeckKit.Coord; y: DeckKit.Coord; curve: { type: "cubic"; x1: DeckKit.Coord; y1: DeckKit.Coord; x2: DeckKit.Coord; y2: DeckKit.Coord } }
-  | { x: DeckKit.Coord; y: DeckKit.Coord; curve: { type: "quadratic"; x1: DeckKit.Coord; y1: DeckKit.Coord } }
-  | { close: true };
-
-export type CustomGeometryProps = ShapeOptionsProps & {
-  /**
-   * Custom geometry path points passed to DeckKit `custGeom`.
-   * Convert SVG path commands before passing them here:
-   * `M` -> `{ x, y, moveTo:true }`, `L` -> `{ x, y }`, `C` -> cubic curve,
-   * `Q` -> quadratic curve, `Z` -> `{ close:true }`.
-   * Coordinates are local PPT units inside the custom geometry box, not raw SVG units.
-   * For SVG conversion, subtract the path bbox origin, then scale local deltas to inches.
-   */
-  points: CustomGeometryPoint[];
+export type CustomGeometryProps = DeckKit.CustomGeometryProps & {
+  /** Base options object merged with top-level option props. Top-level props win. */
+  options?: DeckKit.CustomGeometryProps;
 };
 
 export type ImageProps = DeckKit.ImageProps & {

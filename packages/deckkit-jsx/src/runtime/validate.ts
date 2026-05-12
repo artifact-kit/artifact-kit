@@ -141,12 +141,16 @@ function validateNode(node: PptxNode, path: string, issues: ValidationIssue[]): 
     }
   }
 
-  if (node.type === "CustomGeometry" && (!Array.isArray(props.points) || props.points.length === 0)) {
+  if (
+    node.type === "CustomGeometry" &&
+    (!Array.isArray(props.points) || props.points.length === 0) &&
+    typeof props.svg !== "string"
+  ) {
     issues.push({
       code: "shape.prop.missing",
       level: "error",
       path,
-      message: "CustomGeometry requires a non-empty points array.",
+      message: "CustomGeometry requires a non-empty points array or a plugin-provided SVG input.",
     });
   }
 

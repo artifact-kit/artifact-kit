@@ -609,6 +609,14 @@ export interface MediaProps extends PositionProps, DataOrPathProps, ObjectNamePr
 
 // shapes =========================================================================================
 
+export interface CustomGeometryPropsExtension {}
+export type CustomGeometryPoint =
+	| { x: Coord, y: Coord, moveTo?: boolean }
+	| { x: Coord, y: Coord, curve: { type: 'arc', hR: Coord, wR: Coord, stAng: number, swAng: number } }
+	| { x: Coord, y: Coord, curve: { type: 'cubic', x1: Coord, y1: Coord, x2: Coord, y2: Coord } }
+	| { x: Coord, y: Coord, curve: { type: 'quadratic', x1: Coord, y1: Coord } }
+	| { close: true }
+
 export interface ShapeProps extends PositionProps, ObjectNameProps {
 	/**
 	 * Horizontal alignment
@@ -667,13 +675,7 @@ export interface ShapeProps extends PositionProps, ObjectNameProps {
 	 * @see http://www.datypic.com/sc/ooxml/e-a_arcTo-1.html
 	 * @example [{ x: 0, y: 0 }, { x: 10, y: 10 }] // draw a line between those two points
 	 */
-	points?: Array<
-	| { x: Coord, y: Coord, moveTo?: boolean }
-	| { x: Coord, y: Coord, curve: { type: 'arc', hR: Coord, wR: Coord, stAng: number, swAng: number } }
-	| { x: Coord, y: Coord, curve: { type: 'cubic', x1: Coord, y1: Coord, x2: Coord, y2: Coord } }
-	| { x: Coord, y: Coord, curve: { type: 'quadratic', x1: Coord, y1: Coord } }
-	| { close: true }
-	>
+	points?: CustomGeometryPoint[]
 	/**
 	 * Rounded rectangle radius (only for pptx.shapes.ROUNDED_RECTANGLE)
 	 * - values: 0.0 to 1.0
@@ -715,6 +717,8 @@ export interface ShapeProps extends PositionProps, ObjectNameProps {
 	 */
 	shapeName?: string
 }
+
+export interface CustomGeometryProps extends ShapeProps, CustomGeometryPropsExtension {}
 
 // tables =========================================================================================
 
@@ -1813,7 +1817,10 @@ export interface PresSlide extends SlideBaseProps {
 	addImage: (options: ImageProps) => PresSlide
 	addMedia: (options: MediaProps) => PresSlide
 	addNotes: (notes: string) => PresSlide
-	addShape: (shapeName: SHAPE_NAME, options?: ShapeProps) => PresSlide
+	addShape: {
+		(shapeName: 'custGeom', options?: CustomGeometryProps): PresSlide
+		(shapeName: SHAPE_NAME, options?: ShapeProps): PresSlide
+	}
 	addTable: (tableRows: TableRow[], options?: TableProps) => PresSlide
 	addText: (text: string | TextProps[], options?: TextPropsOptions) => PresSlide
 
