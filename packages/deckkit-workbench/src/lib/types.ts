@@ -61,6 +61,7 @@ export interface AssetRef {
 
 export interface WorkbenchSession {
   id: string
+  workbenchType: string
   data: unknown
   assets?: AssetRef[]
   createdAt: string

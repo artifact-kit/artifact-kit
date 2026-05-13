@@ -10,12 +10,20 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 }
 
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }): Promise<NextResponse> {
-  const { id } = await context.params
-  const body = await request.json() as { data: unknown; assets?: WorkbenchSession['assets'] }
-  return NextResponse.json({ session: updateSession(id, body) })
+  try {
+    const { id } = await context.params
+    const body = await request.json() as { data: unknown; assets?: WorkbenchSession['assets'] }
+    return NextResponse.json({ session: updateSession(id, body) })
+  } catch (error) {
+    return NextResponse.json({ error: formatError(error) }, { status: 400 })
+  }
 }
 
 export async function DELETE(_request: Request, context: { params: Promise<{ id: string }> }): Promise<NextResponse> {
   const { id } = await context.params
   return NextResponse.json({ ok: deleteSession(id) })
+}
+
+function formatError(error: unknown): string {
+  return error instanceof Error ? error.message : 'Invalid session payload'
 }

@@ -9,11 +9,20 @@ export async function GET(): Promise<NextResponse> {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const body = await request.json() as {
-    id?: string
-    data: unknown
-    assets?: WorkbenchSession['assets']
+  try {
+    const body = await request.json() as {
+      id?: string
+      workbenchType: string
+      data: unknown
+      assets?: WorkbenchSession['assets']
+    }
+    const session = createSession(body)
+    return NextResponse.json({ session })
+  } catch (error) {
+    return NextResponse.json({ error: formatError(error) }, { status: 400 })
   }
-  const session = createSession(body)
-  return NextResponse.json({ session })
+}
+
+function formatError(error: unknown): string {
+  return error instanceof Error ? error.message : 'Invalid session payload'
 }

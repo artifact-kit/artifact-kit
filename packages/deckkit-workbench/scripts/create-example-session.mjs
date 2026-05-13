@@ -10,6 +10,7 @@ const response = await fetch(`${baseUrl}/api/sessions`, {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     id: 'example-1-header',
+    workbenchType: 'bbox-review',
     data: {
       title: 'Example 1 Header BBox Review',
       imageAssetId: 'source',
@@ -38,4 +39,4 @@ if (!response.ok) {
 }
 
 const result = await response.json()
-console.log(`${baseUrl}/bbox-review?id=${result.session.id}`)
+console.log(`${baseUrl}/?id=${result.session.id}`)

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { AssetRef, BBox, ElementNode, WorkbenchSession } from '@/lib/types'
+import { bboxReviewDataSchema, type BBoxReviewData } from '@/lib/workbench-registry'
 
 type DragMode = 'move' | 'n' | 'e' | 's' | 'w' | 'nw' | 'ne' | 'sw' | 'se'
 
@@ -11,19 +12,6 @@ interface DragState {
   startY: number
   startBox: BBox
   moved: boolean
-}
-
-interface BBoxReviewData {
-  title?: string
-  imageAssetId: string
-  image: {
-    width: number
-    height: number
-  }
-  activeElementId?: string
-  instructions?: string
-  status?: 'needs-human' | 'complete'
-  elements: ElementNode[]
 }
 
 export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string }) {
@@ -437,19 +425,7 @@ function clampBox(box: BBox, imageW: number, imageH: number): BBox {
 }
 
 function readBBoxReviewData(value: unknown): BBoxReviewData {
-  const input = value && typeof value === 'object' ? value as Partial<BBoxReviewData> : {}
-  if (!input.imageAssetId || !input.image || !Array.isArray(input.elements)) {
-    throw new Error('Invalid bbox review session data')
-  }
-  return {
-    title: input.title,
-    imageAssetId: input.imageAssetId,
-    image: input.image,
-    activeElementId: input.activeElementId,
-    instructions: input.instructions,
-    status: input.status,
-    elements: input.elements,
-  }
+  return bboxReviewDataSchema.parse(value)
 }
 
 function findNextPendingElementId(elements: ElementNode[], currentId: string): string | undefined {

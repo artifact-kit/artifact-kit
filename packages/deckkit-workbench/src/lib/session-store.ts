@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { WorkbenchSession } from './types'
+import { parseWorkbenchData } from './workbench-registry'
 
 const storeKey = Symbol.for('deckkit-workbench.sessions')
 const globalStore = globalThis as typeof globalThis & { [storeKey]?: Map<string, WorkbenchSession> }
@@ -8,14 +9,17 @@ globalStore[storeKey] = sessions
 
 export function createSession(input: {
   id?: string
+  workbenchType: string
   data: unknown
   assets?: WorkbenchSession['assets']
 }): WorkbenchSession {
   const id = input.id ?? randomUUID()
   const now = new Date().toISOString()
+  const data = parseWorkbenchData(input.workbenchType, input.data)
   const session: WorkbenchSession = {
     id,
-    data: input.data,
+    workbenchType: input.workbenchType,
+    data,
     assets: input.assets,
     createdAt: now,
     updatedAt: now,
@@ -36,7 +40,7 @@ export function listSessions(): WorkbenchSession[] {
 
 export function updateSession(sessionId: string, input: { data?: unknown; assets?: WorkbenchSession['assets'] }): WorkbenchSession {
   const session = getSession(sessionId)
-  if ('data' in input) session.data = input.data
+  if ('data' in input) session.data = parseWorkbenchData(session.workbenchType, input.data)
   if ('assets' in input) session.assets = input.assets
   session.updatedAt = new Date().toISOString()
   return session
