@@ -63,11 +63,23 @@ The intended workflow is:
 
 HTTP API mirrors the same model:
 
+- `GET /api/workbenches`
 - `POST /api/sessions`
 - `GET /api/sessions`
 - `GET /api/sessions/:id`
 - `PUT /api/sessions/:id`
 - `DELETE /api/sessions/:id`
+- `GET /api/sessions/:id/data`
+- `PUT /api/sessions/:id/data`
+- `GET /api/sessions/:id/assets`
+- `PUT /api/sessions/:id/assets`
+
+Use the `data` endpoint for large JSON payloads so an agent can stream reviewed workbench data straight to disk:
+
+```bash
+curl -sS http://localhost:3000/api/sessions/<session-id>/data \
+  -o examples/<name>-work/manifests/final.json
+```
 
 Assets can be passed as refs, for example:
 
