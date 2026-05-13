@@ -1,0 +1,28 @@
+{
+  "name": "@artifact-kit/deckkit-workbench",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "next build",
+    "clean": "rm -rf .next data",
+    "create:example-session": "node scripts/create-example-session.mjs",
+    "dev": "next dev",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@artifact-kit/deckkit": "workspace:*",
+    "@artifact-kit/deckkit-jsx": "workspace:*",
+    "@artifact-kit/deckkit-pro": "workspace:*",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.6.3"
+  }
+}

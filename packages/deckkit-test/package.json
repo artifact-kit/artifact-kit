@@ -1,0 +1,22 @@
+{
+  "name": "@artifact-kit/deckkit-test",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm test",
+    "clean": "rm -rf tmp",
+    "test": "node --test src/*.test.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@artifact-kit/deckkit": "workspace:*",
+    "@artifact-kit/deckkit-jsx": "workspace:*",
+    "@artifact-kit/deckkit-pro": "workspace:*",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.6.3"
+  }
+}

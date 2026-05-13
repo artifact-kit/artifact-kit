@@ -1,0 +1,23 @@
+{
+  "source": "../1.png",
+  "image": { "width": 1672, "height": 941 },
+  "coordinateSystem": "pixel",
+  "scope": "header only",
+  "boxes": [
+    { "id": "top_banner", "label": "top banner with title and technology background", "kind": "section", "bbox": { "x": 0, "y": 0, "w": 1672, "h": 264 } },
+    { "id": "main_title_group", "label": "IoT 物联网创新项目", "kind": "text-group", "bbox": { "x": 67, "y": 52, "w": 863, "h": 86 } },
+    { "id": "title_iot", "label": "IoT", "kind": "text", "bbox": { "x": 67, "y": 53, "w": 183, "h": 82 } },
+    { "id": "title_cn", "label": "物联网创新项目", "kind": "text", "bbox": { "x": 273, "y": 51, "w": 657, "h": 87 } },
+    { "id": "subtitle_group", "label": "智慧感知 互联协同 数据驱动", "kind": "text-group", "bbox": { "x": 75, "y": 163, "w": 845, "h": 39 } },
+    { "id": "subtitle_wisdom", "label": "智慧感知", "kind": "text", "bbox": { "x": 153, "y": 164, "w": 187, "h": 38 } },
+    { "id": "subtitle_connected", "label": "互联协同", "kind": "text", "bbox": { "x": 416, "y": 164, "w": 183, "h": 38 } },
+    { "id": "subtitle_data", "label": "数据驱动", "kind": "text", "bbox": { "x": 672, "y": 164, "w": 188, "h": 38 } },
+    { "id": "event_caption_group", "label": "event caption with side rules", "kind": "text-group", "bbox": { "x": 165, "y": 218, "w": 655, "h": 33 } },
+    { "id": "event_caption_text", "label": "大学生创新创业竞赛答辩展示", "kind": "text", "bbox": { "x": 322, "y": 220, "w": 394, "h": 28 } },
+    { "id": "event_left_rule", "label": "left decoration line near event caption", "kind": "decorative-line", "bbox": { "x": 165, "y": 224, "w": 139, "h": 17 } },
+    { "id": "event_right_rule", "label": "right decoration line near event caption", "kind": "decorative-line", "bbox": { "x": 727, "y": 224, "w": 92, "h": 17 } },
+    { "id": "top_right_visual", "label": "blue city and network background", "kind": "decorative-background", "bbox": { "x": 946, "y": 0, "w": 726, "h": 267 } },
+    { "id": "red_blue_swoosh", "label": "red and blue curved divider", "kind": "decorative-shape", "bbox": { "x": 948, "y": 0, "w": 278, "h": 264 } },
+    { "id": "city_skyline", "label": "right-side city skyline and blue wave", "kind": "decorative-shape", "bbox": { "x": 1174, "y": 107, "w": 498, "h": 161 } }
+  ]
+}
