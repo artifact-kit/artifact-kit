@@ -8,3 +8,8 @@ coverage
 *.tsbuildinfo
 references/
 *.pptx
+
+# Generated reconstruction/cropping workspaces. Keep source example assets
+# such as examples/1.png tracked, but leave iterative work outputs local.
+/examples/*-work/
+/examples/**/*-work/

@@ -76,7 +76,7 @@ Assets can be passed as refs, for example:
   "id": "source",
   "kind": "image",
   "source": "workspace-file",
-  "path": "examples/1.png",
+  "path": "examples/iot-innovation-project/source.png",
   "mimeType": "image/png"
 }
 ```

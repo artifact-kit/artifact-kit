@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path'
 
 const baseUrl = process.argv[2] ?? 'http://localhost:3000'
 const repoRoot = resolve(import.meta.dirname, '../../..')
-const manifest = JSON.parse(await readFile(join(repoRoot, 'examples/1-bbox-work/manifests/header-final.json'), 'utf8'))
+const manifest = JSON.parse(await readFile(join(repoRoot, 'examples/iot-innovation-project-bbox-work/manifests/header-final.json'), 'utf8'))
 
 const response = await fetch(`${baseUrl}/api/sessions`, {
   method: 'POST',
@@ -27,7 +27,7 @@ const response = await fetch(`${baseUrl}/api/sessions`, {
         id: 'source',
         kind: 'image',
         source: 'workspace-file',
-        path: 'examples/1.png',
+        path: 'examples/iot-innovation-project/source.png',
         mimeType: 'image/png',
       },
     ],
