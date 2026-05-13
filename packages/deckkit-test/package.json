@@ -6,6 +6,7 @@
   "scripts": {
     "build": "pnpm test",
     "clean": "rm -rf tmp",
+    "iot:basic": "node src/generate-iot-innovation-project-basic.mjs",
     "test": "node --test src/*.test.mjs",
     "typecheck": "tsc --noEmit"
   },
