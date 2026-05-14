@@ -55,3 +55,38 @@
 - Keep the MCP session id stable for the review round. Current full-page session:
   - `iot-innovation-project-full-page-v1`
   - `http://localhost:3000/?id=iot-innovation-project-full-page-v1`
+
+## SVG Reconstruction Scope
+
+- SVG/custom geometry is not only for icons. It is also the right tool for reusable frame chrome and background skins when native PPT primitives do not match the source.
+- Section headers in this reference are not plain rounded rectangles. They combine a main color body, a curved right tail, a pale sweep/underlay, and a white curved separator. Recreating them as a single `roundRect` loses an important visual feature.
+- Treat section containers as layered components:
+  - native PPT shape for simple white body boxes and broad card surfaces
+  - SVG/custom geometry for curved header skins, asymmetric tails, decorative sweeps, and other brand-specific chrome
+  - separate icon/text layers on top
+- This same strategy can apply to other non-icon details: swooshes, ribbons, header tabs, footer bands, callout skins, and decorative background strips.
+  The decision should be based on whether the shape has distinctive curves/asymmetry that would be fragile or noisy to approximate with multiple primitive shapes.
+
+## Primitive-First PPT Reconstruction
+
+- Automatic SVG to custom geometry is risky for icons and dense diagrams because valid-looking SVG can still produce PPTX that PowerPoint asks to repair.
+- For semantic elements that need to remain editable, prefer LLM-authored DeckKit JSX primitives: `Shape`, `Text`, lines, arrows, and grouped helper components.
+- Treat SVG/custom geometry as a specialized fallback, not the default. It is acceptable for distinctive background chrome only after validating the generated PPTX opens without repair.
+- If a visual element is not important to edit and primitive reconstruction is too expensive, use a bbox crop image first, then replace it later with primitives if needed.
+
+## PowerPoint Repair Triggers
+
+- Do not create lines or shapes with negative `w` or `h`. PowerPoint may ask to repair the file because the generated OOXML can contain invalid negative extents such as `<a:ext cx="-...">`.
+- For a visually reversed horizontal arrow, keep the geometry positive and move the arrowhead to the beginning:
+
+  ```js
+  addShape('line', {
+    x: x0,
+    y,
+    w: x1 - x0,
+    h: 0,
+    line: { beginArrowType: 'triangle', endArrowType: 'none' },
+  })
+  ```
+
+- The same rule applies to vertical or diagonal lines: compute a positive bounding box when possible, then express direction through arrowhead placement or flip/rotation instead of negative dimensions.
