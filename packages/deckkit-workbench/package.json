@@ -3,7 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "deckkit-workbench": "./scripts/bbox-review.mjs"
+  },
   "scripts": {
+    "bbox-review": "node scripts/bbox-review.mjs",
     "build": "next build",
     "clean": "rm -rf .next data",
     "create:example-session": "node scripts/create-example-session.mjs",

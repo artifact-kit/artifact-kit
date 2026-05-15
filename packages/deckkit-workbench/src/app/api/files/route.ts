@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { isAbsolute, resolve } from 'node:path'
+import { isSingleJobMode } from '@/lib/job-store'
 
 export const runtime = 'nodejs'
 
@@ -10,8 +11,8 @@ export async function GET(request: Request): Promise<Response> {
   const relativePath = url.searchParams.get('path')
   if (!relativePath) return new Response('Missing path', { status: 400 })
 
-  const filePath = resolve(repoRoot, relativePath)
-  if (!filePath.startsWith(repoRoot)) return new Response('Path escapes workspace', { status: 400 })
+  const filePath = isAbsolute(relativePath) ? relativePath : resolve(repoRoot, relativePath)
+  if (!isSingleJobMode() && !filePath.startsWith(repoRoot)) return new Response('Path escapes workspace', { status: 400 })
 
   const file = await readFile(filePath)
   return new Response(new Uint8Array(file), {

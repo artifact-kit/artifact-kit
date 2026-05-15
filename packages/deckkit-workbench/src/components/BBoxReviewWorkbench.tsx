@@ -27,8 +27,7 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
   const dragRef = useRef<DragState | null>(null)
 
   useEffect(() => {
-    if (!sessionId) return
-    fetch(`/api/sessions/${sessionId}`)
+    fetch(sessionId ? `/api/sessions/${sessionId}` : '/api/job')
       .then(response => response.json())
       .then((data: { session: WorkbenchSession }) => {
         setSession(data.session)
@@ -36,7 +35,10 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
         setData(parsed)
         setActiveId(parsed.activeElementId ?? parsed.elements[0]?.id)
       })
-      .catch(() => setMessage('Session not found. Ask the agent to create a new workbench session.'))
+      .catch(() => setMessage(sessionId
+        ? 'Session not found. Ask the agent to create a new workbench session.'
+        : 'No active CLI job. Start with `pnpm --filter @artifact-kit/deckkit-workbench bbox-review -i input.json -o output.json`.'
+      ))
   }, [sessionId])
 
   useEffect(() => {
@@ -84,22 +86,12 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
     return () => window.removeEventListener('keydown', onKeyDown)
   })
 
-  if (!sessionId) {
-    return (
-      <main className="empty-state">
-        <p className="eyebrow">DeckKit Workbench</p>
-        <h1>No session selected</h1>
-        <p>Ask the agent to create a JSON session, then open this page with <code>/bbox-review?id=&lt;session-id&gt;</code>.</p>
-      </main>
-    )
-  }
-
   if (!session || !data) {
     return (
       <main className="empty-state">
         <p className="eyebrow">DeckKit Workbench</p>
-        <h1>Loading session</h1>
-        <p>{message || `Loading ${sessionId}...`}</p>
+        <h1>{sessionId ? 'Loading session' : 'Loading job'}</h1>
+        <p>{message || (sessionId ? `Loading ${sessionId}...` : 'Loading CLI bbox review job...')}</p>
       </main>
     )
   }
@@ -180,8 +172,11 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
       ? { ...savedData, activeElementId: nextActiveId }
       : savedData
     const finalSession = finalData === savedData ? savedSession : await saveSession(finalData)
+    const completedSession = options.completeReview && isCliJob(finalSession)
+      ? await completeJob(finalData, finalSession.assets)
+      : finalSession
     setData(finalData)
-    setSession(finalSession)
+    setSession(completedSession)
     setActiveId(finalData.activeElementId ?? activeElement.id)
     setDraftBox(null)
     setIsDirty(false)
@@ -200,10 +195,20 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
   }
 
   async function saveSession(nextData: BBoxReviewData): Promise<WorkbenchSession> {
-    const response = await fetch(`/api/sessions/${currentSession.id}`, {
+    const response = await fetch(isCliJob(currentSession) ? '/api/job' : `/api/sessions/${currentSession.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: nextData, assets: currentSession.assets }),
+    })
+    const result = await response.json() as { session: WorkbenchSession }
+    return result.session
+  }
+
+  async function completeJob(nextData: BBoxReviewData, assets: WorkbenchSession['assets']): Promise<WorkbenchSession> {
+    const response = await fetch('/api/job', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: nextData, assets, complete: true }),
     })
     const result = await response.json() as { session: WorkbenchSession }
     return result.session
@@ -329,6 +334,10 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
       </aside>
     </main>
   )
+}
+
+function isCliJob(session: WorkbenchSession): boolean {
+  return session.id === 'cli-job'
 }
 
 function BoxOverlay({
