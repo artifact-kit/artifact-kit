@@ -274,12 +274,54 @@ Recommended current flow:
 
 ## Routing Decisions
 
-- `native`: text, simple cards, lines, arrows, tables, and basic PPT shapes.
+- `native-shape`: simple cards, lines, arrows, tables, footer bands, and basic PPT shapes.
+- `native-text`: text boxes that should remain editable as PowerPoint text.
 - `svg-image`: visually accepted SVG that should scale cleanly but does not need path-level PPT editability.
 - `editable-vector`: SVG-like visual that must be edited in PPT. Prefer hand-authored primitives/custom geometry after visual acceptance.
 - `imagegen`: complex illustration or bitmap-like art where visual similarity matters more than editability.
 - `source-raster`: user-provided final raster asset or screenshot that should remain raster by intent.
+- `drawio-svg`: structured diagram represented as draw.io XML, exported to SVG, then embedded as an SVG image.
 - `layout-only`: bbox used for alignment, not directly rendered.
+
+## Standalone BBox Workbench Input
+
+The current `deckkit-workbench` bbox review flow is a standalone browser tool. The reviewer uploads the local source image and an initial bbox JSON, edits geometry and route fields in the browser, then downloads `<input-file>.final.json`.
+
+For new route-aware work, prefer raw bbox review data:
+
+```json
+{
+  "title": "IoT Innovation Project bbox review",
+  "imageAssetId": "source",
+  "image": { "width": 1672, "height": 941 },
+  "activeElementId": "canvas",
+  "instructions": "Review bbox geometry and route-aware reconstruction fields.",
+  "status": "needs-human",
+  "elements": [
+    {
+      "id": "canvas",
+      "label": "Full slide canvas",
+      "kind": "canvas",
+      "bbox": { "x": 0, "y": 0, "w": 1672, "h": 941 },
+      "route": "layout-only",
+      "editability": "group",
+      "renderRole": "layout",
+      "childrenPolicy": "required",
+      "granularityFeedback": "ok",
+      "routeReason": "Whole-slide alignment reference.",
+      "reviewStatus": "pending"
+    }
+  ]
+}
+```
+
+Accepted element fields include:
+
+- `route`: `layout-only`, `native-shape`, `native-text`, `svg-image`, `editable-vector`, `imagegen`, `source-raster`, `drawio-svg`
+- `editability`: `none`, `asset`, `group`, `element`
+- `renderRole`: `render`, `layout`, `context`
+- `childrenPolicy`: `none`, `optional`, `required`
+- `granularityFeedback`: `ok`, `too-coarse`, `too-fine`
 
 ## BBox Granularity Rule
 
