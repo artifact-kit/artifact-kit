@@ -17,6 +17,10 @@ pnpm --filter @artifact-kit/deckkit-jsx build
 pnpm --filter @artifact-kit/deckkit-jsx publish --access public
 ```
 
+## Agent Notes
+
+- LLM-facing capability notes live in [docs/deckkit-llm-capabilities.md](docs/deckkit-llm-capabilities.md).
+
 ## License
 
 Artifact Kit packages are licensed individually:

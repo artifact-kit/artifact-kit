@@ -11,6 +11,16 @@
   - footer groups and separators
 - If a full manifest is too large for one message, split the session population across MCP `create_session` then `update_session` calls, but the final review URL must point to a complete session before asking the human to review.
 
+## Route-Aware BBox Granularity
+
+- BBox selection is not a pure visual segmentation task. The box granularity must follow the intended reconstruction route and editability requirement.
+- Before finalizing bbox review, each meaningful region should have a route decision such as `native`, `svg-image`, `editable-vector`, `imagegen`, `source-raster`, or `layout-only`.
+- If the final route is a single raster/generated image or a single embedded SVG image, use one bbox for the whole asset. Do not split incidental internal parts unless they will be edited, replaced, or validated independently.
+- If the final route needs editable PPT elements, split to the smallest useful editable unit. For example, a diagram row with six icon+label pairs should not be one bbox if each pair needs to become an editable icon/text group.
+- A group bbox is still useful for alignment, but mark it as `layout-only` or `group` and also include the child bboxes that will be rendered.
+- When uncertain, record both the parent bbox and proposed child bboxes, then ask human review to confirm whether the region should be one final asset or editable parts.
+- Practical test: after drawing a bbox, ask "Will implementation place exactly one thing here?" If yes, one bbox is enough. If no, split into the things implementation will place.
+
 ## MCP Usage
 
 - Use the loaded Codex MCP tool directly, for example `mcp__deckkit_workbench__.create_session` or `mcp__deckkit_workbench__.update_session`.
@@ -67,12 +77,40 @@
 - This same strategy can apply to other non-icon details: swooshes, ribbons, header tabs, footer bands, callout skins, and decorative background strips.
   The decision should be based on whether the shape has distinctive curves/asymmetry that would be fragile or noisy to approximate with multiple primitive shapes.
 
+## Decorative Element Triage
+
+- Do not blindly reproduce every tiny artifact in an image-generated reference. Some marks are random generation noise, not intentional PPT design. In this example, the pale outlined ellipse under the subtitle row has no text, no alignment role, no repeated visual pattern, and no relationship to a nearby icon or section boundary; it can be treated as ignorable image-generation residue.
+- This rule must stay narrow. "Decorative" does not mean "optional." Preserve decorative elements when they do any of the following:
+  - define a section or card boundary
+  - create a recurring visual language, such as header pills, swooshes, ribbons, badges, footer bands, or dividers
+  - guide reading order or connect related content
+  - balance the composition in a clearly intentional way
+  - carry brand, theme, hierarchy, or rhythm even without text
+- Before dropping a small decorative element, check three things:
+  1. If removed, does the layout still read the same at full slide size and section-crop size?
+  2. Is the element repeated elsewhere with a consistent style or position?
+  3. Does it anchor, separate, connect, or emphasize any content?
+- Only ignore the element when the answer is "no" to all three checks. If uncertain, keep it in the bbox/reconstruction plan as `decorative-shape` and ask for human review rather than silently deleting it.
+- Avoid naked magic coordinates for optional decoration. If a decoration is kept, give it a semantic bbox id or wrap it in a named helper such as `drawSubtitleDecorations()`, so future review can tell why it exists.
+
 ## Primitive-First PPT Reconstruction
 
 - Automatic SVG to custom geometry is risky for icons and dense diagrams because valid-looking SVG can still produce PPTX that PowerPoint asks to repair.
 - For semantic elements that need to remain editable, prefer LLM-authored DeckKit JSX primitives: `Shape`, `Text`, lines, arrows, and grouped helper components.
 - Treat SVG/custom geometry as a specialized fallback, not the default. It is acceptable for distinctive background chrome only after validating the generated PPTX opens without repair.
 - If a visual element is not important to edit and primitive reconstruction is too expensive, use a bbox crop image first, then replace it later with primitives if needed.
+
+## Native SVG Image Embedding
+
+- DeckKit core can already embed SVG through `slide.addImage({ path: '...svg', x, y, w, h })`.
+- The generated slide XML uses PowerPoint's native SVG extension, `asvg:svgBlip`, so this route can preserve vector scaling better than converting SVG to PNG before insertion.
+- Use native SVG image embedding as the default route for visually accepted SVG assets that do not need to be edited as individual PPT shapes.
+- Do not assume native SVG embedding means "fully editable." PowerPoint treats the SVG as an image-like vector asset. Editing individual paths still requires a separate conversion route, such as hand-authored DeckKit primitives/custom geometry.
+- Current caveat: DeckKit core's Node SVG packaging also creates a `.png` fallback relationship, but that fallback file currently contains SVG bytes rather than valid PNG bytes. It works for current PowerPoint SVG rendering, but the packaging issue is tracked separately in Linear ART-11.
+- Practical reconstruction order:
+  1. Generate and visually validate the SVG.
+  2. Embed the accepted SVG directly with core `addImage`.
+  3. Convert to editable PPT primitives only when editability is a real requirement.
 
 ## PowerPoint Repair Triggers
 
