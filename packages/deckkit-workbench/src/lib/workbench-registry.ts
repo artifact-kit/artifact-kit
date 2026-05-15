@@ -28,6 +28,20 @@ const elementKindSchema = z.enum([
 ])
 
 const reviewStatusSchema = z.enum(['pending', 'reviewing', 'accepted', 'needs-agent'])
+const reconstructionRouteSchema = z.enum([
+  'layout-only',
+  'native-shape',
+  'native-text',
+  'svg-image',
+  'editable-vector',
+  'imagegen',
+  'source-raster',
+  'drawio-svg',
+])
+const editabilitySchema = z.enum(['none', 'asset', 'group', 'element'])
+const renderRoleSchema = z.enum(['render', 'layout', 'context'])
+const childrenPolicySchema = z.enum(['none', 'optional', 'required'])
+const granularityFeedbackSchema = z.enum(['ok', 'too-coarse', 'too-fine'])
 
 const elementNodeSchema = z.object({
   id: z.string(),
@@ -39,6 +53,12 @@ const elementNodeSchema = z.object({
   reviewStatus: reviewStatusSchema.optional(),
   confidence: z.number().optional(),
   notes: z.string().optional(),
+  route: reconstructionRouteSchema.optional(),
+  editability: editabilitySchema.optional(),
+  renderRole: renderRoleSchema.optional(),
+  childrenPolicy: childrenPolicySchema.optional(),
+  granularityFeedback: granularityFeedbackSchema.optional(),
+  routeReason: z.string().optional(),
 })
 
 export const bboxReviewDataSchema = z.object({
@@ -55,43 +75,3 @@ export const bboxReviewDataSchema = z.object({
 })
 
 export type BBoxReviewData = z.infer<typeof bboxReviewDataSchema>
-export type WorkbenchType = 'bbox-review'
-
-export interface WorkbenchDefinition {
-  id: WorkbenchType
-  route: string
-  title: string
-  description: string
-  dataSchema: z.ZodType
-}
-
-export const workbenches = [
-  {
-    id: 'bbox-review',
-    route: '/bbox-review',
-    title: 'BBox Review',
-    description: 'Review and correct element bounding boxes over a source image.',
-    dataSchema: bboxReviewDataSchema,
-  },
-] satisfies WorkbenchDefinition[]
-
-export function listWorkbenches() {
-  return workbenches.map(workbench => ({
-    id: workbench.id,
-    route: workbench.route,
-    title: workbench.title,
-    description: workbench.description,
-    dataSchema: z.toJSONSchema(workbench.dataSchema),
-  }))
-}
-
-export function getWorkbenchDefinition(type: string): WorkbenchDefinition {
-  const workbench = workbenches.find(item => item.id === type)
-  if (!workbench) throw new Error(`Unknown workbench type: ${type}`)
-  return workbench
-}
-
-export function parseWorkbenchData(type: string, data: unknown): unknown {
-  if (typeof type !== 'string' || type.length === 0) throw new Error('Missing workbenchType')
-  return getWorkbenchDefinition(type).dataSchema.parse(data)
-}

@@ -1,10 +1,15 @@
-'use client'
-
 import { useEffect, useRef, useState } from 'react'
-import type { AssetRef, BBox, ElementNode, WorkbenchSession } from '@/lib/types'
+import type { BBox, ElementNode } from '@/lib/types'
 import { bboxReviewDataSchema, type BBoxReviewData } from '@/lib/workbench-registry'
 
 type DragMode = 'move' | 'n' | 'e' | 's' | 'w' | 'nw' | 'ne' | 'sw' | 'se'
+type PlanField = 'route' | 'editability' | 'renderRole' | 'childrenPolicy' | 'granularityFeedback' | 'notes' | 'routeReason'
+
+const routeOptions = ['layout-only', 'native-shape', 'native-text', 'svg-image', 'editable-vector', 'imagegen', 'source-raster', 'drawio-svg'] as const
+const editabilityOptions = ['none', 'asset', 'group', 'element'] as const
+const renderRoleOptions = ['render', 'layout', 'context'] as const
+const childrenPolicyOptions = ['none', 'optional', 'required'] as const
+const granularityFeedbackOptions = ['ok', 'too-coarse', 'too-fine'] as const
 
 interface DragState {
   mode: DragMode
@@ -14,9 +19,17 @@ interface DragState {
   moved: boolean
 }
 
-export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string }) {
-  const [session, setSession] = useState<WorkbenchSession | null>(null)
-  const [data, setData] = useState<BBoxReviewData | null>(null)
+export default function BBoxReviewWorkbench({
+  data,
+  imageUrl,
+  onChange,
+  onDownload,
+}: {
+  data: BBoxReviewData
+  imageUrl: string
+  onChange: (data: BBoxReviewData) => void
+  onDownload: (data: BBoxReviewData) => void
+}) {
   const [activeId, setActiveId] = useState<string | undefined>()
   const [draftBox, setDraftBox] = useState<BBox | null>(null)
   const [showContext, setShowContext] = useState(true)
@@ -27,25 +40,14 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
   const dragRef = useRef<DragState | null>(null)
 
   useEffect(() => {
-    fetch(sessionId ? `/api/sessions/${sessionId}` : '/api/job')
-      .then(response => response.json())
-      .then((data: { session: WorkbenchSession }) => {
-        setSession(data.session)
-        const parsed = readBBoxReviewData(data.session.data)
-        setData(parsed)
-        setActiveId(parsed.activeElementId ?? parsed.elements[0]?.id)
-      })
-      .catch(() => setMessage(sessionId
-        ? 'Session not found. Ask the agent to create a new workbench session.'
-        : 'No active CLI job. Start with `pnpm --filter @artifact-kit/deckkit-workbench bbox-review -i input.json -o output.json`.'
-      ))
-  }, [sessionId])
+    setActiveId(current => current ?? data.activeElementId ?? data.elements[0]?.id)
+  }, [data.activeElementId, data.elements])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null
       if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
-      if (!session || !data) return
+      if (!data) return
 
       const activeElement = data.elements.find(element => element.id === activeId) ?? data.elements[0]
       const activeBox = draftBox ?? activeElement?.bbox
@@ -86,19 +88,8 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
     return () => window.removeEventListener('keydown', onKeyDown)
   })
 
-  if (!session || !data) {
-    return (
-      <main className="empty-state">
-        <p className="eyebrow">DeckKit Workbench</p>
-        <h1>{sessionId ? 'Loading session' : 'Loading job'}</h1>
-        <p>{message || (sessionId ? `Loading ${sessionId}...` : 'Loading CLI bbox review job...')}</p>
-      </main>
-    )
-  }
-
-  const currentSession = session
   const currentData = data
-  const sourceUrl = resolveAssetUrl(currentSession.assets, currentData.imageAssetId)
+  const sourceUrl = imageUrl
   const activeElement = currentData.elements.find(box => box.id === activeId) ?? currentData.elements[0]
   const activeBox = draftBox ?? activeElement?.bbox
   const scaleX = imageRect.width / currentData.image.width
@@ -148,15 +139,17 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
     setDraftBox(null)
     setIsDirty(false)
     const nextData = { ...currentData, activeElementId: elementId }
-    setData(nextData)
-    await saveSession(nextData)
+    onChange(nextData)
   }
 
   async function saveDraft(options: { completeArea?: boolean; completeReview?: boolean; goNext?: boolean } = {}) {
     if (!activeElement || !activeBox) return
     setSaving(true)
     setMessage('')
-    const reviewStatus = options.completeArea ? 'accepted' as const : 'reviewing' as const
+    const activeFeedback = activeElement.granularityFeedback ?? 'ok'
+    const reviewStatus = options.completeArea
+      ? activeFeedback === 'ok' ? 'accepted' as const : 'needs-agent' as const
+      : 'reviewing' as const
     const nextData = {
       ...currentData,
       status: options.completeReview ? 'complete' as const : currentData.status,
@@ -165,18 +158,13 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
         ? { ...element, bbox: activeBox, reviewStatus }
         : element),
     }
-    const savedSession = await saveSession(nextData)
-    const savedData = readBBoxReviewData(savedSession.data)
+    const savedData = readBBoxReviewData(nextData)
     const nextActiveId = options.goNext ? findNextPendingElementId(savedData.elements, activeElement.id) : activeElement.id
     const finalData = nextActiveId && nextActiveId !== savedData.activeElementId
       ? { ...savedData, activeElementId: nextActiveId }
       : savedData
-    const finalSession = finalData === savedData ? savedSession : await saveSession(finalData)
-    const completedSession = options.completeReview && isCliJob(finalSession)
-      ? await completeJob(finalData, finalSession.assets)
-      : finalSession
-    setData(finalData)
-    setSession(completedSession)
+    onChange(finalData)
+    if (options.completeReview) onDownload(finalData)
     setActiveId(finalData.activeElementId ?? activeElement.id)
     setDraftBox(null)
     setIsDirty(false)
@@ -194,24 +182,25 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
     setIsDirty(true)
   }
 
-  async function saveSession(nextData: BBoxReviewData): Promise<WorkbenchSession> {
-    const response = await fetch(isCliJob(currentSession) ? '/api/job' : `/api/sessions/${currentSession.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: nextData, assets: currentSession.assets }),
-    })
-    const result = await response.json() as { session: WorkbenchSession }
-    return result.session
+  function updateActiveElement(field: PlanField, value: string) {
+    if (!activeElement) return
+    const normalizedValue = value === '' ? undefined : value
+    const nextElements = currentData.elements.map(element => element.id === activeElement.id
+      ? { ...element, [field]: normalizedValue }
+      : element)
+    onChange({ ...currentData, elements: nextElements })
+    setIsDirty(true)
   }
 
-  async function completeJob(nextData: BBoxReviewData, assets: WorkbenchSession['assets']): Promise<WorkbenchSession> {
-    const response = await fetch('/api/job', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: nextData, assets, complete: true }),
-    })
-    const result = await response.json() as { session: WorkbenchSession }
-    return result.session
+  function dataWithDraft(): BBoxReviewData {
+    if (!activeElement || !activeBox) return currentData
+    return {
+      ...currentData,
+      activeElementId: activeElement.id,
+      elements: currentData.elements.map(element => element.id === activeElement.id
+        ? { ...element, bbox: activeBox }
+        : element),
+    }
   }
 
   const completedCount = currentData.elements.filter(element => element.reviewStatus === 'accepted').length
@@ -230,6 +219,7 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
             <input type="checkbox" checked={showContext} onChange={event => setShowContext(event.target.checked)} />
             Context boxes
           </label>
+          <button className="download-button" onClick={() => onDownload(readBBoxReviewData(dataWithDraft()))}>Download JSON</button>
         </header>
 
         <div className="image-stage">
@@ -304,7 +294,60 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
             <section className="description">
               <h3>Review instruction</h3>
               <p>{activeElement.description ?? activeElement.label}</p>
-              {activeElement.notes ? <p className="notes">{activeElement.notes}</p> : null}
+            </section>
+
+            <section className="plan-panel">
+              <h3>Reconstruction plan</h3>
+              <div className="plan-fields">
+                <PlanSelect
+                  label="Route"
+                  value={activeElement.route}
+                  options={routeOptions}
+                  onChange={value => updateActiveElement('route', value)}
+                />
+                <PlanSelect
+                  label="Editability"
+                  value={activeElement.editability}
+                  options={editabilityOptions}
+                  onChange={value => updateActiveElement('editability', value)}
+                />
+                <PlanSelect
+                  label="Render role"
+                  value={activeElement.renderRole}
+                  options={renderRoleOptions}
+                  onChange={value => updateActiveElement('renderRole', value)}
+                />
+                <PlanSelect
+                  label="Children"
+                  value={activeElement.childrenPolicy}
+                  options={childrenPolicyOptions}
+                  onChange={value => updateActiveElement('childrenPolicy', value)}
+                />
+                <PlanSelect
+                  label="Granularity"
+                  value={activeElement.granularityFeedback}
+                  options={granularityFeedbackOptions}
+                  onChange={value => updateActiveElement('granularityFeedback', value)}
+                />
+              </div>
+              <label className="plan-textarea">
+                Route reason
+                <textarea
+                  value={activeElement.routeReason ?? ''}
+                  onChange={event => updateActiveElement('routeReason', event.target.value)}
+                  placeholder="Why this route is appropriate"
+                  rows={3}
+                />
+              </label>
+              <label className="plan-textarea">
+                Notes for agent
+                <textarea
+                  value={activeElement.notes ?? ''}
+                  onChange={event => updateActiveElement('notes', event.target.value)}
+                  placeholder="Use this for too-coarse / too-fine feedback"
+                  rows={3}
+                />
+              </label>
             </section>
 
             <div className="actions">
@@ -336,8 +379,26 @@ export default function BBoxReviewWorkbench({ sessionId }: { sessionId?: string 
   )
 }
 
-function isCliJob(session: WorkbenchSession): boolean {
-  return session.id === 'cli-job'
+function PlanSelect<T extends readonly string[]>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  value?: string
+  options: T
+  onChange: (value: string) => void
+}) {
+  return (
+    <label>
+      {label}
+      <select value={value ?? ''} onChange={event => onChange(event.target.value)}>
+        <option value="">Unset</option>
+        {options.map(option => <option key={option} value={option}>{option}</option>)}
+      </select>
+    </label>
+  )
 }
 
 function BoxOverlay({
@@ -442,13 +503,4 @@ function findNextPendingElementId(elements: ElementNode[], currentId: string): s
   const currentIndex = Math.max(0, elements.findIndex(element => element.id === currentId))
   const ordered = [...elements.slice(currentIndex + 1), ...elements.slice(0, currentIndex + 1)]
   return ordered.find(element => element.reviewStatus !== 'accepted')?.id ?? elements[currentIndex]?.id
-}
-
-function resolveAssetUrl(assets: AssetRef[] | undefined, assetId: string): string {
-  const asset = assets?.find(item => item.id === assetId)
-  if (!asset) return ''
-  if (asset.source === 'url') return asset.src ?? ''
-  if (asset.source === 'data-url') return asset.dataUrl ?? ''
-  if (asset.source === 'workspace-file') return `/api/files?path=${encodeURIComponent(asset.path ?? '')}`
-  return ''
 }

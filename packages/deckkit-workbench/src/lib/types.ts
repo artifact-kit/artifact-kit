@@ -25,6 +25,19 @@ export type ElementKind =
   | 'shape'
 
 export type ReviewStatus = 'pending' | 'reviewing' | 'accepted' | 'needs-agent'
+export type ReconstructionRoute =
+  | 'layout-only'
+  | 'native-shape'
+  | 'native-text'
+  | 'svg-image'
+  | 'editable-vector'
+  | 'imagegen'
+  | 'source-raster'
+  | 'drawio-svg'
+export type Editability = 'none' | 'asset' | 'group' | 'element'
+export type RenderRole = 'render' | 'layout' | 'context'
+export type ChildrenPolicy = 'none' | 'optional' | 'required'
+export type GranularityFeedback = 'ok' | 'too-coarse' | 'too-fine'
 
 export interface ElementNode {
   id: string
@@ -36,6 +49,12 @@ export interface ElementNode {
   reviewStatus?: ReviewStatus
   confidence?: number
   notes?: string
+  route?: ReconstructionRoute
+  editability?: Editability
+  renderRole?: RenderRole
+  childrenPolicy?: ChildrenPolicy
+  granularityFeedback?: GranularityFeedback
+  routeReason?: string
 }
 
 export interface ElementManifest {
@@ -57,13 +76,4 @@ export interface AssetRef {
   dataUrl?: string
   path?: string
   mimeType?: string
-}
-
-export interface WorkbenchSession {
-  id: string
-  workbenchType: string
-  data: unknown
-  assets?: AssetRef[]
-  createdAt: string
-  updatedAt: string
 }

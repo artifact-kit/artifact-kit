@@ -1,0 +1,50 @@
+name: Deploy DeckKit Workbench Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/deckkit-workbench-pages.yml'
+      - 'packages/deckkit-workbench/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workbench
+        run: pnpm --filter @artifact-kit/deckkit-workbench build
+        env:
+          GITHUB_PAGES_BASE: /${{ github.event.repository.name }}/
+
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: packages/deckkit-workbench/dist
+          force_orphan: true
