@@ -1,0 +1,14 @@
+{
+  "name": "@artifact-kit/svg-icon-reference",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Generate JSONL keyword indexes and copied SVG folders from local SVG icon libraries.",
+  "scripts": {
+    "build": "pnpm generate",
+    "clean": "rm -rf dist",
+    "generate": "pnpm generate:lucide",
+    "generate:lucide": "node src/generate-lucide-reference.mjs",
+    "test": "node --test"
+  }
+}
