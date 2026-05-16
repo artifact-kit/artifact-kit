@@ -11,6 +11,21 @@ Use this skill when reconstructing a source slide image into a repeatable, mostl
 
 This workflow is audited step by step. Do not optimize for speed by skipping checkpoints, batching future regions, or assuming the user will only inspect the final PPTX. Treat every bbox, region render, icon side-by-side, and `qa.md` as user-visible review evidence. Put effort into bbox accuracy, rule compliance, completing the current step's stated goal, semantic comparison, and per-step output quality. If a gate is not satisfied, stop, fix it, or record the validation gap before proceeding.
 
+## Non-Negotiable Audit Mode
+
+This skill is an audited reconstruction workflow, not a best-effort PPT generator. A run is considered failed if the agent optimizes for producing a complete PPTX before the required gate evidence exists.
+
+Failure conditions:
+
+- Authoring SVG assets for a future region before the current region gate passes.
+- Writing, enabling, or generating DeckKit drawing code for a future region before the current region gate passes.
+- Generating a full-slide PPTX before every previous region gate has passed.
+- Creating region QA after the fact from a full-slide implementation.
+- Batch-authoring all icons/SVGs in one script run before their regions become current.
+- Proceeding past a region without explicitly reporting PASS/gaps and waiting for user confirmation.
+
+After each region gate, stop and ask the user for confirmation before continuing. Do not interpret silence or momentum as approval to start the next region. The short-term goal is always "complete the current gate and stop", not "finish the deck".
+
 ## Required References
 
 Before implementation, resolve `SKILL_DIR` as the directory containing this `SKILL.md`, then read:
@@ -300,6 +315,13 @@ Keep crop extraction separate from deck generation:
 - `scripts/build-svg-assets.mjs`: accepts a region id, authors only that region's SVG assets, writes final `.svg` files under `svg/`, and keeps SVG source code out of `generate.mjs`. Within the region, author and QA one SVG/icon at a time.
 - `scripts/generate.mjs`: accepts a region/stage id, reads the final bbox JSON, crop manifest, and existing SVG files, then builds the PPTX for completed regions plus the current region only. It should not recrop source images or author SVG source code unless an asset manifest is missing or stale. By default, generate both preview and deliverable builds for the requested stage.
 
+Script contract:
+
+- `build-svg-assets.mjs` must require one explicit current region id. It must not support `all`, default to `all`, or generate SVGs for future regions.
+- `generate.mjs` must require one explicit current region/stage id. It must not support `all`, `full`, or final full-slide generation until every region has a PASS `qa.md` or explicitly recorded validation gap.
+- If a final full-slide build is needed, the script must first verify every required `preview/regions/<region-id>/qa.md` exists and is PASS or has explicit gaps.
+- Stage order must be enforced by QA files, not by trust. A later region may only render after all previous region gates have evidence.
+
 The bbox JSON is positioning and review evidence, not a runtime rendering DSL. Do not implement `generate.mjs` as a generic route/kind/id-driven renderer that loops through bbox elements and dispatches through broad helpers such as `fontSize(element)`, `textColor(element)`, `shapeStyle(element)`, or `id.includes(...)` rules. This failure mode hides visual decisions in traditional if/else code and defeats the purpose of LLM-driven reconstruction.
 
 Required approach:
@@ -431,6 +453,12 @@ For each stage, render only completed regions and the current region. Do not add
 
 Pick the next bounded region from the reviewed bbox JSON, such as a section or card group.
 
+Required region gate:
+
+- Work on exactly one current region.
+- Allowed changes are limited to SVG assets used by this region, DeckKit drawing code for completed regions plus the current region, and QA files for this region and its icons.
+- Forbidden before the current region passes: future region SVG assets, future region drawing code, full-slide output, `all` stage generation, and post-hoc QA generated from a completed full-slide implementation.
+
 For that region:
 
 1. Place `native-text` as DeckKit text boxes.
@@ -454,6 +482,8 @@ Use `side-by-side.png` as the primary semantic comparison: source on the left, r
 After creating region QA files, open/read `render.png` and `side-by-side.png` with visual inspection. Write `qa.md` with PASS or concrete issues/fixes. Fix text overflow, wrapping, icon scale, missing elements, and semantic mismatches during that region's QA pass. Do not defer obvious region problems to the final full-slide preview.
 
 This is a hard gate: do not start the next region until the current region's QA files exist, have been visually inspected, and issues are either fixed or explicitly recorded as validation gaps.
+
+After the current region gate is complete, report the PASS/gaps and stop. Wait for the user to approve continuing to the next region. Do not continue automatically, even if the next region is obvious.
 
 ### 6. Icon Reconstruction
 
