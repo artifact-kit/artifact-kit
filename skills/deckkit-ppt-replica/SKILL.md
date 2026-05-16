@@ -9,18 +9,18 @@ Use this skill when reconstructing a source slide image into a repeatable, mostl
 
 ## Required References
 
-Before implementation, read:
+Before implementation, resolve `SKILL_DIR` as the directory containing this `SKILL.md`, then read:
 
-- `reference/deckkit-capabilities.md` for DeckKit API capabilities, route names, image helpers, and implementation caveats.
+- `$SKILL_DIR/reference/deckkit-capabilities.md` for DeckKit API capabilities, route names, image helpers, and implementation caveats.
 
 Use the bbox schema embedded in this `SKILL.md` as the source of truth for `initial-bbox.json`. Do not require example-specific `LESSONS-LEARNED.md`; this skill is where durable lessons belong. When maintaining this repository itself, `docs/bbox-route-aware-segmentation-proposal.md`, `docs/deckkit-llm-capabilities.md`, or Workbench source files may be used as local supplements, but a published skill user should not need them.
 
 For icons, use:
 
-- `reference/lucide/lucide-icons.jsonl`
-- `reference/lucide/icons/<icon>.svg`
+- `$SKILL_DIR/reference/lucide/lucide-icons.jsonl`
+- `$SKILL_DIR/reference/lucide/icons/<icon>.svg`
 
-If those paths differ in the current repo, find the closest lucide reference directory with `rg --files | rg 'lucide.*jsonl|lucide.*/icons/.+\\.svg$'`.
+Do not search the current repo, parent directories, or the user's home directory for these skill references. In an installed skill this reference directory may be `/Users/<USER>/.agents/skills/deckkit-ppt-replica/reference/`; use that skill-local directory directly. Never run broad commands such as `find /Users/<user> ...` to locate lucide assets. If a required skill reference is missing, report the skill installation problem instead of falling back to unrelated files.
 
 ## Workflow
 
@@ -30,10 +30,13 @@ Create an ignored example work folder beside the tracked source example:
 
 ```txt
 examples/<example-name>-bbox-work/
+  input/
   manifests/
   scripts/
   crops/
   preview/
+    regions/
+    icons/
   svg/
   output/
 ```
@@ -44,7 +47,15 @@ Keep the source image in the semantic tracked example folder, such as:
 examples/<example-name>/source.png
 ```
 
-All generated reconstruction files must stay under `examples/<example-name>-bbox-work/`: npm package files, scripts, manifests, crops, SVG assets, previews, and output PPTX files. Do not write generated work artifacts into the source example folder or repository root.
+Before creating folders, confirm the current writable repo root with `pwd` and, when available, `git rev-parse --show-toplevel`. Create the work folder under that writable repo root, not beside an arbitrary source image path that may be outside the sandbox or workspace. If the intended path is not writable, choose the matching path inside the current repo and state that choice.
+
+Copy or mirror the source image into the work folder as:
+
+```txt
+examples/<example-name>-bbox-work/input/source.png
+```
+
+All scripts should read `input/source.png` as the local source. Keep the original source path only as provenance in notes or manifests. All generated reconstruction files must stay under `examples/<example-name>-bbox-work/`: npm package files, scripts, manifests, crops, SVG assets, previews, QA artifacts, and output PPTX files. Do not write generated work artifacts into the source example folder or repository root.
 
 ### 2. Generate Initial BBox JSON
 
@@ -167,10 +178,10 @@ Granularity rule:
 
 ### 3. Optional Human Workbench Review
 
-Ask the user to open:
+Before starting reconstruction, explicitly ask the user whether they want to use Workbench to create `initial-bbox.final.json`. If yes, ask them to open:
 
 ```txt
-https://artifact-kit.github.io/
+https://artifact-kit.github.io/artifact-kit/
 ```
 
 They should upload:
@@ -180,7 +191,7 @@ They should upload:
 
 The browser tool lets them adjust bbox geometry and route fields, then download `<input-file>.final.json`.
 
-This review is optional. If skipped, continue with the initial JSON and expect to spend more model/vision iterations correcting positions and routes.
+This review is optional. If skipped, continue with `initial-bbox.json`, record that Workbench final JSON was skipped, and expect to spend more model/vision iterations correcting positions and routes. Do not silently skip this decision.
 
 ### 4. Configure DeckKit Reconstruction
 
@@ -192,6 +203,8 @@ Recommended work-folder layout after this step:
 examples/<example-name>-bbox-work/
   package.json
   node_modules/
+  input/
+    source.png
   manifests/
     initial-bbox.json
     initial-bbox.final.json
@@ -201,6 +214,8 @@ examples/<example-name>-bbox-work/
     generate.mjs
   crops/
   preview/
+    regions/
+    icons/
   svg/
   output/
 ```
@@ -256,9 +271,10 @@ pptx.theme = {
 
 Write all generated assets and outputs under the same `xxx-work` folder:
 
+- source copy: `input/source.png`
 - crops: `crops/`
 - authored SVGs: `svg/`
-- visual previews: `preview/`
+- visual previews and QA artifacts: `preview/`
 - generated PPTX: `output/`
   - `*-preview.pptx`: visual-check build with SVG assets rasterized to PNG before insertion.
   - `*-deliverable.pptx`: final delivery build with SVG assets inserted directly.
@@ -351,23 +367,33 @@ For that region:
 2. Place `native-shape` as DeckKit shapes, lines, arrows, gradients, and simple containers.
 3. Place `source-raster` crops only when the bitmap is the intended final asset.
 4. Place accepted `svg-image` assets with `slide.addImage({ path: svgPath, x, y, w, h })`.
-5. Render the slide preview and compare the region against the source crop before moving to the next region.
+5. Render the slide preview, crop the completed region from source and render, generate an overlay, and compare before moving to the next region.
+
+For every completed region, write QA files:
+
+```txt
+preview/regions/<region-id>/source.png
+preview/regions/<region-id>/render.png
+preview/regions/<region-id>/overlay.png
+```
+
+Fix text overflow, wrapping, icon scale, and alignment issues during that region's QA pass. Do not defer obvious region problems to the final full-slide preview.
 
 ### 6. Icon Reconstruction
 
 For every icon:
 
 1. Identify the icon's semantic meaning from the surrounding text and visual shape.
-2. Search lucide metadata with `rg`, for example:
+2. Search skill-local lucide metadata with `rg`, for example:
 
    ```bash
-   rg -i "thermometer|temperature|wifi|cloud|database" reference/lucide/lucide-icons.jsonl
+   rg -i "thermometer|temperature|wifi|cloud|database" "$SKILL_DIR/reference/lucide/lucide-icons.jsonl"
    ```
 
 3. Read the most relevant SVG source:
 
    ```txt
-   reference/lucide/icons/<name>.svg
+   $SKILL_DIR/reference/lucide/icons/<name>.svg
    ```
 
 4. You MUST read the relevant reference SVG source code before drawing the new icon. The reference is not for copying blindly; it is to understand which concrete primitives communicate the meaning, such as outline shape, inner symbol, connector, leaf vein, gauge arc, bell body, or node graph.
@@ -382,10 +408,20 @@ For every icon:
    ```
 
    Treat subgroups as independently positioned semantic units. This avoids accidental merged shapes that read as stands, chains, tails, or other unintended objects after scaling.
-7. Render the reconstructed SVG to PNG with DeckKit Pro `writeSvgToPng` or the current preview pipeline, then visually inspect the icon itself at its target bbox size before accepting it. Do not rely only on the full-slide preview; small icon errors can disappear at full-slide scale.
-8. Compare the rendered icon with the source icon crop. Adjust if the semantic match, weight, proportions, or subgroup placement are off.
+7. Render the reconstructed SVG to PNG with DeckKit Pro `writeSvgToPng` at the target bbox size, then visually inspect the icon itself before accepting it. Do not rely only on the full-slide preview; small icon errors can disappear at full-slide scale.
+8. Crop the source icon, compare it with the rendered icon, and adjust if the semantic match, weight, proportions, transparency behavior, or subgroup placement are off.
 
 Never skip the local icon visual check for newly authored SVGs.
+
+For every authored icon, write QA files:
+
+```txt
+preview/icons/<icon-id>/source.png
+preview/icons/<icon-id>/render.png
+preview/icons/<icon-id>/side-by-side.png
+```
+
+If transparent PNG previews render with black or incorrect backgrounds in Quick Look or region QA, fix the preview export pipeline immediately. The deliverable may still use direct SVG insertion, but the preview PNGs must be visually reliable for QA.
 
 ### 7. Non-Basic Decorative Shapes
 
@@ -414,12 +450,15 @@ Keep prompts in the work folder so the asset can be regenerated.
 After each region and at the end:
 
 - Render the PPTX to preview images.
-- Compare the full slide and region crops with the source.
-- For every newly authored SVG icon or decoration, inspect the isolated rendered PNG at the target bbox size, not only the full-slide preview.
+- Compare the full slide and all `preview/regions/<region-id>/` crops with the source.
+- For every newly authored SVG icon or decoration, inspect `preview/icons/<icon-id>/` outputs at the target bbox size, not only the full-slide preview.
 - Check that text is editable where planned.
+- Check that no region has unresolved text overflow, clipped labels, or unintended wrapping.
 - Check that layout-only boxes did not produce PPT objects.
 - Validate preview and deliverable PPTX files with `unzip -t` or the available package integrity check.
 - For SVG-heavy deliverables, confirm the final PPTX contains direct SVG assets, not only rasterized PNG substitutes.
 - Check that PowerPoint opens without repair prompts.
+
+In the final response, clearly separate completed outputs from validation gaps. If Workbench final JSON, per-region QA, per-icon QA, PowerPoint open-check, or any other required validation was skipped, say so explicitly instead of implying full completion.
 
 If reconstruction uncovers a reusable DeckKit capability or limitation, update this skill's bundled `reference/deckkit-capabilities.md`. When maintaining the artifact-kit repository itself, also update `docs/deckkit-llm-capabilities.md` if that local doc is the source consumed by other tools.
