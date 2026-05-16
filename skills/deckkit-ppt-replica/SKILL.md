@@ -300,6 +300,64 @@ Keep crop extraction separate from deck generation:
 - `scripts/build-svg-assets.mjs`: accepts a region id, authors only that region's SVG assets, writes final `.svg` files under `svg/`, and keeps SVG source code out of `generate.mjs`. Within the region, author and QA one SVG/icon at a time.
 - `scripts/generate.mjs`: accepts a region/stage id, reads the final bbox JSON, crop manifest, and existing SVG files, then builds the PPTX for completed regions plus the current region only. It should not recrop source images or author SVG source code unless an asset manifest is missing or stale. By default, generate both preview and deliverable builds for the requested stage.
 
+The bbox JSON is positioning and review evidence, not a runtime rendering DSL. Do not implement `generate.mjs` as a generic route/kind/id-driven renderer that loops through bbox elements and dispatches through broad helpers such as `fontSize(element)`, `textColor(element)`, `shapeStyle(element)`, or `id.includes(...)` rules. This failure mode hides visual decisions in traditional if/else code and defeats the purpose of LLM-driven reconstruction.
+
+Required approach:
+
+- Use bbox only to retrieve coordinates, sizes, and source crops.
+- Let the LLM write explicit DeckKit commands for the current region, one semantic object at a time.
+- Make the visual decision visible at the call site: text content, font size, color, weight, fill, line, layer order, icon file, and crop file.
+- Keep helpers limited to coordinate conversion, file lookup, and truly repeated components whose visual spec has been verified against the source.
+
+Bad pattern:
+
+```js
+for (const element of elements) {
+  if (element.renderRole !== 'render') continue
+  if (element.route === 'native-text') addText(slide, element)
+  else if (element.route === 'native-shape') addShape(slide, element)
+  else if (element.route === 'svg-image') addImage(slide, element)
+}
+
+function textColor(element) {
+  if (element.id.includes('core')) return RED
+  if (element.id.startsWith('sensing')) return BLUE
+  return DARK_BLUE
+}
+```
+
+Good pattern:
+
+```js
+function box(id) {
+  return pbox(getElement(id).bbox)
+}
+
+async function drawProjectBackground(slide) {
+  slide.addShape('roundRect', {
+    ...box('project_background_card'),
+    fill: { color: 'FFFFFF' },
+    line: { color: 'B7CAF4', width: 0.8 },
+  })
+  slide.addImage({ path: 'svg/project_background_header.svg', ...box('project_background_header') })
+  slide.addText('项目背景', {
+    ...box('project_background_header_text'),
+    fontSize: 15.5,
+    bold: true,
+    color: 'FFFFFF',
+    margin: 0,
+  })
+  slide.addShape('ellipse', {
+    ...box('project_background_row_1_icon_circle'),
+    fill: { color: 'EEF5FF' },
+    line: { color: 'D4DFF4', width: 0.8 },
+  })
+  slide.addImage({ path: 'svg/project_background_row_1_icon.svg', ...box('project_background_row_1_icon') })
+}
+```
+
+Do not write the whole slide as a data interpreter and then tune global style rules. The reconstruction code should read like a semantic description of the region being rebuilt.
+
 Do not batch-author SVGs for future regions. A light asset inventory is fine, but SVG source creation and visual QA happen when that region is the current reconstruction target.
 
 Asset files must have truthful extensions. A `.svg` file must contain SVG XML; a `.png` file must contain real PNG bytes produced by `writeSvgToPng`, `writeImage`, or another DeckKit Pro image helper. Do not write SVG text to a `.png` path, because Quick Look and downstream preview tools can misread the file.
@@ -430,6 +488,26 @@ For every icon:
 8. Crop the source icon, compare it with the rendered icon, and adjust if the semantic match, weight, proportions, transparency behavior, or subgroup placement are off.
 
 Never skip the local icon visual check for newly authored SVGs.
+
+Author SVG files one at a time for the current region. Do not generate a whole slide's SVG library through one object map plus default style branches such as `directIconRefs[id] ?? ...`, `id.startsWith('sensing') ? BLUE : ...`, or `id.includes('header_icon') ? WHITE : ...`. The problem is not using a script to write files; the problem is forcing different visual groups through the same default style rules.
+
+Treat visual group membership as part of the icon spec. The same semantic icon can require separate SVG code or separate parameters in different regions:
+
+- A large project-background temperature/humidity icon in a pale circle is not the same visual asset as a small sensing-layer temperature sensor icon.
+- Icons inside the same system-architecture sensing group may still have local exceptions, such as a green air-quality/leaf icon among blue sensor icons.
+- Header icons, footer icons, service icons, scenario icons, and core-innovation icons each have their own color, scale, stroke weight, and background context.
+
+Do not reuse an icon file, color rule, scale rule, stroke-width rule, or transform just because the semantic meaning is similar. Reuse is allowed only after comparing source crops and confirming that the visual group specifications match. If they do not match, create separate SVG files and separate QA records.
+
+Each icon's `reference.txt` and `qa.md` must be written after visual inspection, not emitted as automatic PASS text. `qa.md` must explicitly confirm or fix:
+
+- semantic match to the source icon;
+- color and contrast in the icon's real background context;
+- stroke weight and fill behavior;
+- size, padding, and bbox occupancy;
+- direction/orientation;
+- subgroup placement for composed icons;
+- consistency with neighboring icons in the same visual group.
 
 For every authored icon, write QA files:
 
