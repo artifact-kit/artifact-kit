@@ -176,22 +176,26 @@ Granularity rule:
 - Do not knowingly output `granularityFeedback: "too-coarse"` as the first-pass answer when the needed child boxes are visible and inferable. Split them now.
 - For editable icon rows, create child boxes for each icon and each label, or each icon+label pair plus child icon/text boxes. Do not use one render bbox for six icons if the intent is editable reconstruction.
 
-### 3. Optional Human Workbench Review
+### 3. Required Checkpoint: Optional Workbench Review
 
-Before starting reconstruction, explicitly ask the user whether they want to use Workbench to create `initial-bbox.final.json`. If yes, ask them to open:
+After writing and validating `manifests/initial-bbox.json`, stop. Do not install dependencies, create reconstruction scripts, author SVGs, or generate slides yet.
+
+Tell the user they can optionally use Workbench to generate a more accurate `initial-bbox.final.json`. Explain the tradeoff clearly: Workbench lets them correct bbox geometry, hierarchy, routes, and granularity before reconstruction, which usually reduces later visual-fix iterations and token use. If they skip it, reconstruction can continue from `initial-bbox.json`, but later region QA may need more AI vision adjustments because bbox errors were not corrected by hand.
+
+Give the exact operation steps:
 
 ```txt
 https://artifact-kit.github.io/artifact-kit/
 ```
 
-They should upload:
+1. Open the URL.
+2. Upload the source image.
+3. Upload `manifests/initial-bbox.json`.
+4. Adjust boxes/routes if needed.
+5. Download `<input-file>.final.json`.
+6. Put the downloaded file in `manifests/` as `initial-bbox.final.json`, or send its path/content back to continue.
 
-1. the source image
-2. `manifests/initial-bbox.json`
-
-The browser tool lets them adjust bbox geometry and route fields, then download `<input-file>.final.json`.
-
-This review is optional. If skipped, continue with `initial-bbox.json`, record that Workbench final JSON was skipped, and expect to spend more model/vision iterations correcting positions and routes. Do not silently skip this decision.
+Continue only after the user either provides `initial-bbox.final.json` or explicitly says to skip Workbench and proceed with `initial-bbox.json`. Record which path was chosen. Do not silently skip this checkpoint.
 
 ### 4. Configure DeckKit Reconstruction
 
@@ -289,8 +293,10 @@ await writeImage(cropped, 'crops/asset.png')
 Keep crop extraction separate from deck generation:
 
 - `scripts/crop-assets.mjs`: reads the final bbox JSON, crops every `source-raster` render asset with `cropImage`, writes files under `crops/`, and writes a crop manifest such as `manifests/crop-assets.json`.
-- `scripts/build-svg-assets.mjs`: reads or authors semantic SVG assets, writes final `.svg` files under `svg/`, and keeps SVG source code out of `generate.mjs`.
-- `scripts/generate.mjs`: reads the final bbox JSON, crop manifest, and existing SVG files, then builds the PPTX. It should not recrop source images or author SVG source code unless an asset manifest is missing or stale. By default, generate both preview and deliverable builds.
+- `scripts/build-svg-assets.mjs`: accepts a region id, authors only that region's SVG assets, writes final `.svg` files under `svg/`, and keeps SVG source code out of `generate.mjs`.
+- `scripts/generate.mjs`: accepts a region/stage id, reads the final bbox JSON, crop manifest, and existing SVG files, then builds the PPTX. It should not recrop source images or author SVG source code unless an asset manifest is missing or stale. By default, generate both preview and deliverable builds for the requested stage.
+
+Do not batch-author SVGs for future regions. A light asset inventory is fine, but SVG source creation and visual QA happen when that region is the current reconstruction target.
 
 Asset files must have truthful extensions. A `.svg` file must contain SVG XML; a `.png` file must contain real PNG bytes produced by `writeSvgToPng`, `writeImage`, or another DeckKit Pro image helper. Do not write SVG text to a `.png` path, because Quick Look and downstream preview tools can misread the file.
 
@@ -366,8 +372,9 @@ For that region:
 1. Place `native-text` as DeckKit text boxes.
 2. Place `native-shape` as DeckKit shapes, lines, arrows, gradients, and simple containers.
 3. Place `source-raster` crops only when the bitmap is the intended final asset.
-4. Place accepted `svg-image` assets with `slide.addImage({ path: svgPath, x, y, w, h })`.
-5. Render the slide preview, crop the completed region from source and render, generate an overlay, and compare before moving to the next region.
+4. Author, render, and QA only the SVG assets needed by this region.
+5. Place accepted `svg-image` assets with `slide.addImage({ path: svgPath, x, y, w, h })`.
+6. Render the slide preview, crop the completed region from source and render, generate an overlay, and compare before moving to the next region.
 
 For every completed region, write QA files:
 
@@ -378,6 +385,8 @@ preview/regions/<region-id>/overlay.png
 ```
 
 Fix text overflow, wrapping, icon scale, and alignment issues during that region's QA pass. Do not defer obvious region problems to the final full-slide preview.
+
+This is a hard gate: do not start the next region until the current region's QA files exist and issues are either fixed or explicitly recorded as validation gaps.
 
 ### 6. Icon Reconstruction
 
@@ -419,7 +428,10 @@ For every authored icon, write QA files:
 preview/icons/<icon-id>/source.png
 preview/icons/<icon-id>/render.png
 preview/icons/<icon-id>/side-by-side.png
+preview/icons/<icon-id>/reference.txt
 ```
+
+`reference.txt` must list the lucide SVG file path(s) read before drawing the icon, plus any semantic notes used to adapt them. If no good lucide reference exists, record the attempted searches and the chosen fallback before drawing.
 
 If transparent PNG previews render with black or incorrect backgrounds in Quick Look or region QA, fix the preview export pipeline immediately. The deliverable may still use direct SVG insertion, but the preview PNGs must be visually reliable for QA.
 
@@ -433,6 +445,8 @@ For decorations that are not simple PPT primitives, such as curved section heade
 4. Iterate until it carries the same layout role and visual rhythm.
 
 Do not reproduce random image-generation artifacts unless they define a boundary, hierarchy, repeated style, or reading order.
+
+For obvious gradient bands, bars, ribbons, and header/footer strips, use DeckKit/DeckKit Pro gradient support first. If the exact API is unclear, inspect the installed package/types or run a minimal experiment in the work folder before falling back to solid blocks. A solid-color approximation is allowed only when the failed gradient attempt and visual impact are recorded as validation gaps.
 
 ### 8. Hard Bitmap Assets
 
