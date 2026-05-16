@@ -1,6 +1,6 @@
 {
   "name": "@artifact-kit/deckkit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Artifact Kit core library for PowerPoint deck generation.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
@@ -42,6 +42,7 @@
   "scripts": {
     "build": "vite build",
     "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm typecheck && pnpm test && pnpm build",
     "typecheck": "tsc --noEmit",
     "test": "node --test"
   },
