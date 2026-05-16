@@ -7,6 +7,10 @@ description: Reconstruct a reference slide image into an editable PowerPoint usi
 
 Use this skill when reconstructing a source slide image into a repeatable, mostly editable PPTX with DeckKit.
 
+## Execution Discipline
+
+This workflow is audited step by step. Do not optimize for speed by skipping checkpoints, batching future regions, or assuming the user will only inspect the final PPTX. Treat every bbox, region render, icon side-by-side, and `qa.md` as user-visible review evidence. Put effort into bbox accuracy, rule compliance, completing the current step's stated goal, semantic comparison, and per-step output quality. If a gate is not satisfied, stop, fix it, or record the validation gap before proceeding.
+
 ## Required References
 
 Before implementation, resolve `SKILL_DIR` as the directory containing this `SKILL.md`, then read:
@@ -293,8 +297,8 @@ await writeImage(cropped, 'crops/asset.png')
 Keep crop extraction separate from deck generation:
 
 - `scripts/crop-assets.mjs`: reads the final bbox JSON, crops every `source-raster` render asset with `cropImage`, writes files under `crops/`, and writes a crop manifest such as `manifests/crop-assets.json`.
-- `scripts/build-svg-assets.mjs`: accepts a region id, authors only that region's SVG assets, writes final `.svg` files under `svg/`, and keeps SVG source code out of `generate.mjs`.
-- `scripts/generate.mjs`: accepts a region/stage id, reads the final bbox JSON, crop manifest, and existing SVG files, then builds the PPTX. It should not recrop source images or author SVG source code unless an asset manifest is missing or stale. By default, generate both preview and deliverable builds for the requested stage.
+- `scripts/build-svg-assets.mjs`: accepts a region id, authors only that region's SVG assets, writes final `.svg` files under `svg/`, and keeps SVG source code out of `generate.mjs`. Within the region, author and QA one SVG/icon at a time.
+- `scripts/generate.mjs`: accepts a region/stage id, reads the final bbox JSON, crop manifest, and existing SVG files, then builds the PPTX for completed regions plus the current region only. It should not recrop source images or author SVG source code unless an asset manifest is missing or stale. By default, generate both preview and deliverable builds for the requested stage.
 
 Do not batch-author SVGs for future regions. A light asset inventory is fine, but SVG source creation and visual QA happen when that region is the current reconstruction target.
 
@@ -354,6 +358,8 @@ Why:
 - A coarse full-slide draft can hide regional alignment, typography, and icon errors because everything is approximate at once.
 - Each iteration should validate one newly completed region against the source crop before moving on.
 
+Implementation must grow in the same order. Start with code that renders only the header. After header QA passes, append or enable the next region's code, then repeat. Do not write the entire slide implementation first and use the final full-slide render as the primary review surface. Full-slide previews are allowed only after the current region gate has passed.
+
 Recommended region order for dense single-slide infographics:
 
 1. Header title/subtitle area.
@@ -374,19 +380,22 @@ For that region:
 3. Place `source-raster` crops only when the bitmap is the intended final asset.
 4. Author, render, and QA only the SVG assets needed by this region.
 5. Place accepted `svg-image` assets with `slide.addImage({ path: svgPath, x, y, w, h })`.
-6. Render the slide preview, crop the completed region from source and render, generate an overlay, and compare before moving to the next region.
+6. Render the slide preview, crop the completed region from source and render, generate a side-by-side QA image, inspect it, and compare before moving to the next region.
 
 For every completed region, write QA files:
 
 ```txt
 preview/regions/<region-id>/source.png
 preview/regions/<region-id>/render.png
-preview/regions/<region-id>/overlay.png
+preview/regions/<region-id>/side-by-side.png
+preview/regions/<region-id>/qa.md
 ```
 
-Fix text overflow, wrapping, icon scale, and alignment issues during that region's QA pass. Do not defer obvious region problems to the final full-slide preview.
+Use `side-by-side.png` as the primary semantic comparison: source on the left, render on the right, with enough padding and a neutral/checker/dark background when needed so white or transparent elements are visible. `overlay.png` is optional and only helps geometry checks; it is not a substitute for semantic side-by-side review.
 
-This is a hard gate: do not start the next region until the current region's QA files exist and issues are either fixed or explicitly recorded as validation gaps.
+After creating region QA files, open/read `render.png` and `side-by-side.png` with visual inspection. Write `qa.md` with PASS or concrete issues/fixes. Fix text overflow, wrapping, icon scale, missing elements, and semantic mismatches during that region's QA pass. Do not defer obvious region problems to the final full-slide preview.
+
+This is a hard gate: do not start the next region until the current region's QA files exist, have been visually inspected, and issues are either fixed or explicitly recorded as validation gaps.
 
 ### 6. Icon Reconstruction
 
@@ -429,9 +438,12 @@ preview/icons/<icon-id>/source.png
 preview/icons/<icon-id>/render.png
 preview/icons/<icon-id>/side-by-side.png
 preview/icons/<icon-id>/reference.txt
+preview/icons/<icon-id>/qa.md
 ```
 
 `reference.txt` must list the lucide SVG file path(s) read before drawing the icon, plus any semantic notes used to adapt them. If no good lucide reference exists, record the attempted searches and the chosen fallback before drawing.
+
+`side-by-side.png` must place source and render on a background that makes the icon visible. For white or transparent icons, use a dark, checker, or original-context background; never review a white icon on a white background. After creating the files, open/read `side-by-side.png` with visual inspection and write `qa.md` with PASS or concrete issues/fixes. Do not move to the next icon or accept the region until every authored icon in that region has been visually inspected.
 
 If transparent PNG previews render with black or incorrect backgrounds in Quick Look or region QA, fix the preview export pipeline immediately. The deliverable may still use direct SVG insertion, but the preview PNGs must be visually reliable for QA.
 
@@ -461,14 +473,19 @@ Keep prompts in the work folder so the asset can be regenerated.
 
 ### 9. Validation
 
-After each region and at the end:
+After each region:
 
-- Render the PPTX to preview images.
-- Compare the full slide and all `preview/regions/<region-id>/` crops with the source.
-- For every newly authored SVG icon or decoration, inspect `preview/icons/<icon-id>/` outputs at the target bbox size, not only the full-slide preview.
+- Render the current-stage PPTX to preview images.
+- Confirm each `preview/regions/<region-id>/qa.md` says PASS or records explicit gaps.
+- Confirm each `preview/icons/<icon-id>/qa.md` says PASS or records explicit gaps.
+- Read the current region/icon QA images directly; do not use a full-slide render as a shortcut.
 - Check that text is editable where planned.
 - Check that no region has unresolved text overflow, clipped labels, or unintended wrapping.
 - Check that layout-only boxes did not produce PPT objects.
+
+At the end:
+
+- Compare the full slide only after all region gates pass; never use it as a replacement for region/icon QA.
 - Validate preview and deliverable PPTX files with `unzip -t` or the available package integrity check.
 - For SVG-heavy deliverables, confirm the final PPTX contains direct SVG assets, not only rasterized PNG substitutes.
 - Check that PowerPoint opens without repair prompts.
