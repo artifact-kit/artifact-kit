@@ -97,6 +97,23 @@ Useful options:
 
 For multiline text, use `\n` in the text string.
 
+Rich text with different styles inside one text box:
+
+```js
+slide.addText([
+  { text: '红色部分 ', options: { color: 'FF0000' } },
+  { text: '蓝色部分', options: { color: '0000FF' } },
+], {
+  x, y, w, h,
+  fontFace: 'Microsoft YaHei',
+  fontSize: 14.5,
+  margin: 0,
+  fit: 'shrink',
+})
+```
+
+Use `TextProps[]` when a single PowerPoint text box needs multiple colors, weights, font sizes, hyperlinks, or other run-level formatting. Put shared positioning and default style in the second `addText` options argument; put only run-specific overrides in each run's `options`.
+
 ## Images And SVG
 
 Bitmap crop or generated raster:

@@ -1,3 +1,6 @@
 [submodule "packages/deckkit-pro"]
 	path = packages/deckkit-pro
 	url = https://github.com/artifact-kit/deckkit-pro.git
+[submodule "packages/deckkit-replica"]
+	path = packages/deckkit-replica
+	url = https://github.com/artifact-kit/deckkit-replica.git
