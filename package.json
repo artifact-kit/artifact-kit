@@ -7,6 +7,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "clean": "pnpm -r clean",
+    "skills:install": "node scripts/install-skills.mjs",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test"
   },
