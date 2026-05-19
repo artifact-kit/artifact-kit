@@ -547,6 +547,7 @@ export async function createExcelWorksheet (chartObject: ISlideRelChart, zip: JS
 export function makeXmlCharts (rel: ISlideRelChart): string {
 	let strXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
 	let usesSecondaryValAxis = false
+	let usesSecondaryCatAxis = false
 
 	// STEP 1: Create chart
 	{
@@ -613,6 +614,7 @@ export function makeXmlCharts (rel: ISlideRelChart): string {
 			const valAxisId = options.secondaryValAxis ? AXIS_ID_VALUE_SECONDARY : AXIS_ID_VALUE_PRIMARY
 			const catAxisId = options.secondaryCatAxis ? AXIS_ID_CATEGORY_SECONDARY : AXIS_ID_CATEGORY_PRIMARY
 			usesSecondaryValAxis = usesSecondaryValAxis || options.secondaryValAxis
+			usesSecondaryCatAxis = usesSecondaryCatAxis || options.secondaryCatAxis
 			strXml += makeChartType(type.type, type.data, options, valAxisId, catAxisId, true)
 		})
 	} else {
@@ -637,11 +639,16 @@ export function makeXmlCharts (rel: ISlideRelChart): string {
 
 		if (rel.opts.valAxes) {
 			strXml += makeValAxis({ ...rel.opts, ...rel.opts.valAxes[0] }, AXIS_ID_VALUE_PRIMARY)
-			if (rel.opts.valAxes[1]) {
-				strXml += makeValAxis({ ...rel.opts, ...rel.opts.valAxes[1] }, AXIS_ID_VALUE_SECONDARY)
+			if (rel.opts.valAxes[1] || usesSecondaryValAxis) {
+				const secondaryCatAxisId = usesSecondaryCatAxis || rel.opts.catAxes?.[1] ? AXIS_ID_CATEGORY_SECONDARY : AXIS_ID_CATEGORY_PRIMARY
+				strXml += makeValAxis({ ...rel.opts, ...rel.opts.valAxes[1] }, AXIS_ID_VALUE_SECONDARY, secondaryCatAxisId)
 			}
 		} else {
 			strXml += makeValAxis(rel.opts, AXIS_ID_VALUE_PRIMARY)
+			if (usesSecondaryValAxis) {
+				const secondaryCatAxisId = usesSecondaryCatAxis || rel.opts.catAxes?.[1] ? AXIS_ID_CATEGORY_SECONDARY : AXIS_ID_CATEGORY_PRIMARY
+				strXml += makeValAxis(rel.opts, AXIS_ID_VALUE_SECONDARY, secondaryCatAxisId)
+			}
 
 			// Add series axis for 3D bar
 			if (rel.opts._type === CHART_TYPE.BAR3D) {
@@ -650,8 +657,9 @@ export function makeXmlCharts (rel: ISlideRelChart): string {
 		}
 
 		// Combo Charts: Add secondary axes after all vals
-		if (rel.opts?.catAxes && rel.opts?.catAxes[1]) {
-			strXml += makeCatAxis({ ...rel.opts, ...rel.opts.catAxes[1] }, AXIS_ID_CATEGORY_SECONDARY, AXIS_ID_VALUE_SECONDARY)
+		if (rel.opts?.catAxes?.[1] || usesSecondaryCatAxis) {
+			const secondaryValAxisId = usesSecondaryValAxis || rel.opts.valAxes?.[1] ? AXIS_ID_VALUE_SECONDARY : AXIS_ID_VALUE_PRIMARY
+			strXml += makeCatAxis({ ...rel.opts, ...rel.opts.catAxes?.[1] }, AXIS_ID_CATEGORY_SECONDARY, secondaryValAxisId)
 		}
 	}
 
@@ -1745,10 +1753,10 @@ function makeCatAxis (opts: IChartOptsLib, axisId: string, valAxisId: string): s
  * @param {string} valAxisId - value
  * @return {string} XML
  */
-function makeValAxis (opts: IChartOptsLib, valAxisId: string): string {
+function makeValAxis (opts: IChartOptsLib, valAxisId: string, catAxisId?: string): string {
 	let axisPos = valAxisId === AXIS_ID_VALUE_PRIMARY ? (opts.barDir === 'col' ? 'l' : 'b') : opts.barDir !== 'col' ? 'r' : 't'
 	if (valAxisId === AXIS_ID_VALUE_SECONDARY) axisPos = 'r' // default behavior for PPT is showing 2nd val axis on right (primary axis on left)
-	const crossAxId = valAxisId === AXIS_ID_VALUE_PRIMARY ? AXIS_ID_CATEGORY_PRIMARY : AXIS_ID_CATEGORY_SECONDARY
+	const crossAxId = catAxisId || (valAxisId === AXIS_ID_VALUE_PRIMARY ? AXIS_ID_CATEGORY_PRIMARY : AXIS_ID_CATEGORY_SECONDARY)
 	let strXml = ''
 
 	strXml += '<c:valAx>'
