@@ -89,6 +89,7 @@ The bbox JSON and crop manifest are positioning/reference evidence, not a render
 Required approach:
 
 - Use the source crop as the visual reference for the individual element.
+- When crop images are attached to the prompt, treat those attached crop images as the primary visual reference for geometry, colors, stroke weight, gradients, and aspect ratio.
 - Make visual decisions visible in the SVG source: viewBox, stroke, fill, opacity, path geometry, text-as-path decisions, grouping, transforms, and layer order.
 - Keep helpers limited to file lookup, manifest parsing, XML escaping, and truly repeated primitives whose visual spec has been verified against the source.
 - Asset files must have truthful extensions. A `.svg` file must contain SVG XML; do not write SVG text to a `.png` path.
@@ -99,10 +100,10 @@ Required approach:
 For every semantic icon:
 
 1. Identify the icon's meaning from the source crop, neighboring labels, and task context.
-2. Search skill-local lucide metadata with `rg`, for example:
+2. Search skill-local lucide metadata with `grep` or `jq`. For example:
 
    ```bash
-   rg -i "thermometer|temperature|wifi|cloud|database" "$SKILL_DIR/reference/lucide/lucide-icons.jsonl"
+   grep -Ei "thermometer|temperature|wifi|cloud|database" "$SKILL_DIR/reference/lucide/lucide-icons.jsonl"
    ```
 
 3. Read the most relevant SVG source:
@@ -141,6 +142,8 @@ For decorations that are not simple PPT primitives, such as curved section heade
 1. Visually identify the semantic role: header tab, section boundary, motion sweep, brand accent, separator, background skin, connector, or badge.
 2. Reconstruct at the semantic level using SVG paths, gradients, masks, groups, and explicit geometry.
 3. Match the layout role and visual rhythm of the source crop.
+4. Use a viewBox that matches the asset's natural bbox aspect ratio for wide/tall decorative assets instead of forcing `0 0 24 24`.
+5. Preserve the crop's silhouette, curvature rhythm, edge treatments, bevel/shadow intent, and layer order well enough that the asset looks usable when placed on the slide.
 
 Do not reproduce random image-generation artifacts unless they define a boundary, hierarchy, repeated style, or reading order.
 

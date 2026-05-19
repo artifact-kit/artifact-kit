@@ -194,6 +194,7 @@ Granularity rule:
 - If a section, card, or row parent describes the same visible object as a child, only one of them may be `renderRole: "render"`. Parent structure should usually be `route: "layout-only"` with `renderRole: "layout"` or `renderRole: "context"`.
 - Do not knowingly output `granularityFeedback: "too-coarse"` as the first-pass answer when the needed child boxes are visible and inferable. Split them now.
 - For editable icon rows, create child boxes for each icon and each label, or each icon+label pair plus child icon/text boxes. Do not use one render bbox for six icons if the intent is editable reconstruction.
+- For decorative containers with irregular ornamental borders, plaques, ribbons, tabs, badges, or non-basic frame chrome around editable text, split the visual frame from the text. The frame should usually be one `kind: "decorative-shape"` render element with `route: "svg-image"` or `route: "editable-vector"`; the readable text inside it should be separate `route: "native-text"` render element(s). Do not merge text into the SVG frame unless the text is intentionally non-editable artwork.
 
 ### 3. Required Checkpoint: Optional Workbench Review
 
@@ -490,10 +491,10 @@ After the current region gate is complete, report the PASS/gaps and stop. Wait f
 For every icon:
 
 1. Identify the icon's semantic meaning from the surrounding text and visual shape.
-2. Search skill-local lucide metadata with `rg`, for example:
+2. Search skill-local lucide metadata with `grep` or `jq`. For example:
 
    ```bash
-   rg -i "thermometer|temperature|wifi|cloud|database" "$SKILL_DIR/reference/lucide/lucide-icons.jsonl"
+   grep -Ei "thermometer|temperature|wifi|cloud|database" "$SKILL_DIR/reference/lucide/lucide-icons.jsonl"
    ```
 
 3. Read the most relevant SVG source:

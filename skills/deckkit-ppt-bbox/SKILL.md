@@ -26,13 +26,14 @@ Do not:
 
 ## Workflow
 
-### 1. Create Work Folders
+### 1. Use The Prepared Work Folder
 
-Create an ignored example work folder beside the tracked source example:
+Use the current DeckKit PPT work folder prepared by the caller or by the `deckkit-ppt-workspace` skill. The expected layout is:
 
 ```txt
-examples/<example-name>-bbox-work/
+deckkit-ppt-work-YYYYMMDD-HHMMSS/
   input/
+    source.<ext>
   manifests/
   scripts/
   crops/
@@ -43,21 +44,15 @@ examples/<example-name>-bbox-work/
   output/
 ```
 
-Keep the source image in the semantic tracked example folder, such as:
+Do not create another workspace, do not create `examples/<name>-bbox-work/`, and do not move or recopy the source image unless the caller explicitly asks for workspace setup.
+
+The current work folder may not be a Git repository. Do not run `git status`, `git rev-parse`, or other git commands as part of bbox generation or completion checks. Use the explicit paths provided by the caller, and rely on the host CLI or caller to validate that files were written.
+
+All generated bbox artifacts for this skill must stay inside the current work folder, especially:
 
 ```txt
-examples/<example-name>/source.png
+manifests/initial-bbox.json
 ```
-
-Before creating folders, confirm the current writable repo root with `pwd` and, when available, `git rev-parse --show-toplevel`. Create the work folder under that writable repo root, not beside an arbitrary source image path that may be outside the sandbox or workspace. If the intended path is not writable, choose the matching path inside the current repo and state that choice.
-
-Copy or mirror the source image into the work folder as:
-
-```txt
-examples/<example-name>-bbox-work/input/source.png
-```
-
-All generated bbox work artifacts must stay under `examples/<example-name>-bbox-work/`. Do not write generated work artifacts into the source example folder or repository root.
 
 ### 2. Generate Initial BBox JSON
 
@@ -177,6 +172,7 @@ Granularity rule:
 - If a section, card, or row parent describes the same visible object as a child, only one of them may be `renderRole: "render"`. Parent structure should usually be `route: "layout-only"` with `renderRole: "layout"` or `renderRole: "context"`.
 - Do not knowingly output `granularityFeedback: "too-coarse"` as the first-pass answer when the needed child boxes are visible and inferable. Split them now.
 - For editable icon rows, create child boxes for each icon and each label, or each icon+label pair plus child icon/text boxes. Do not use one render bbox for six icons if the intent is editable reconstruction.
+- For decorative containers with irregular ornamental borders, plaques, ribbons, tabs, badges, or non-basic frame chrome around editable text, split the visual frame from the text. The frame should usually be one `kind: "decorative-shape"` render element with `route: "svg-image"` or `route: "editable-vector"`; the readable text inside it should be separate `route: "native-text"` render element(s). Do not merge text into the SVG frame unless the text is intentionally non-editable artwork.
 
 ### 3. Validate And Stop
 

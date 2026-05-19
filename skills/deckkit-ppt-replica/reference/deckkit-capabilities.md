@@ -78,7 +78,6 @@ slide.addText('文本', {
   valign: 'mid',
   margin: 0,
   breakLine: false,
-  fit: 'shrink',
 })
 ```
 
@@ -93,7 +92,8 @@ Useful options:
 - `valign`
 - `margin`
 - `breakLine`
-- `fit: 'shrink'`
+
+Do not use text auto-fit/shrink options such as `fit: 'shrink'` for editable PPT text. Shrink-to-fit makes PowerPoint mutate font size or text box size during editing and dragging, which breaks manual editability.
 
 For multiline text, use `\n` in the text string.
 
@@ -108,7 +108,6 @@ slide.addText([
   fontFace: 'Microsoft YaHei',
   fontSize: 14.5,
   margin: 0,
-  fit: 'shrink',
 })
 ```
 
