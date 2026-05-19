@@ -67,6 +67,9 @@ importers:
       consola:
         specifier: ^3.4.2
         version: 3.4.2
+      sharp:
+        specifier: ^0.33.5
+        version: 0.33.5
     devDependencies:
       '@types/node':
         specifier: ^22.8.1
