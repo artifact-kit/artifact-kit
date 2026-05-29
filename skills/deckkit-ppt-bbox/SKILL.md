@@ -174,6 +174,14 @@ Granularity rule:
 - For editable icon rows, create child boxes for each icon and each label, or each icon+label pair plus child icon/text boxes. Do not use one render bbox for six icons if the intent is editable reconstruction.
 - For decorative containers with irregular ornamental borders, plaques, ribbons, tabs, badges, or non-basic frame chrome around editable text, split the visual frame from the text. The frame should usually be one `kind: "decorative-shape"` render element with `route: "svg-image"` or `route: "editable-vector"`; the readable text inside it should be separate `route: "native-text"` render element(s). Do not merge text into the SVG frame unless the text is intentionally non-editable artwork.
 
+SVG route eligibility:
+
+- A `svg-image` or `editable-vector` render node must describe one indivisible vector-like visual asset: an icon, logo, pictogram, ornamental frame, connector cluster, or diagram fragment that implementation would place as a single authored asset.
+- Do not mark an entire UI/card/module as one `svg-image` just because it contains a border, text, and an illustration/icon. A card with readable text, a border/background, and a visual asset is a composite layout, not one SVG asset.
+- For composite cards, create a parent `kind: "card"` or `kind: "group"` with `route: "layout-only"` and `renderRole: "layout"` or `"context"`. Then split visible children: border/background as `native-shape`, each readable text block as `native-text`, and each real icon/illustration as its own `icon`/`image`/`decorative-shape` node with the appropriate route.
+- If the SVG-worthy visual inside a card is small, bbox that inner visual tightly. Do not expand the SVG bbox to include the card chrome, label text, captions, badges, or surrounding whitespace.
+- If a candidate SVG bbox contains editable/readable text plus unrelated layout chrome, treat it as too coarse and split it before emitting the first-pass JSON.
+
 ### 3. Validate And Stop
 
 After writing `manifests/initial-bbox.json`, validate it locally before responding.
