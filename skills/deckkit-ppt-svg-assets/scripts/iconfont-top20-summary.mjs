@@ -3,9 +3,26 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { createHash } from "node:crypto";
 
 const execFileAsync = promisify(execFile);
+
+function randomDelayMs(maxMs = 5000) {
+  return Math.floor(Math.random() * maxMs);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function randomSleep(label) {
+  const delay = randomDelayMs();
+  if (delay > 0) {
+    console.error(`[iconfont-top20-summary] ${label}: sleeping ${(delay / 1000).toFixed(2)}s`);
+    await sleep(delay);
+  }
+}
 
 function usage() {
   console.error([
@@ -42,10 +59,6 @@ function countPaths(svg) {
   return [...svg.matchAll(/<path\b/gi)].length;
 }
 
-function sha256(value) {
-  return createHash("sha256").update(value).digest("hex");
-}
-
 function candidateFileName(icon, index) {
   return `${String(index + 1).padStart(2, "0")}-${icon.id}-${sanitizeFilePart(icon.name)}.svg`;
 }
@@ -77,7 +90,7 @@ function parseViewBox(svg) {
 
 async function fetchIconfont(query) {
   const encodedQuery = encodeURIComponent(query);
-  const body = `q=${encodedQuery}&sortType=updated_at&page=1&pageSize=20&sType=&fromCollection=-1&complex=1&fills=&ctoken=null`;
+  const body = `q=${encodedQuery}&sortType=updated_at&page=1&pageSize=20&sType=&fromCollection=-1&line=1&fills=&ctoken=null`;
   const env = { ...process.env };
   for (const key of ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]) {
     delete env[key];
@@ -188,6 +201,7 @@ if (!Number.isFinite(columns) || columns <= 0 || !Number.isFinite(cell) || cell 
 }
 if (!query && (!inputPath || inputPath.startsWith("--"))) usage();
 
+await randomSleep("start jitter");
 const raw = query ? await fetchIconfont(query) : await readFile(inputPath, "utf8");
 const parsed = JSON.parse(raw);
 const icons = Array.isArray(parsed?.data?.icons) ? parsed.data.icons : [];
@@ -206,7 +220,6 @@ const top = icons.slice(0, limit).map((icon, index) => {
     viewBox: extractViewBox(showSvg),
     pathCount: countPaths(showSvg),
     showSvgLength: showSvg.length,
-    showSvgSha256: showSvg ? sha256(showSvg) : null,
     candidateFile: outDir ? path.join("candidates", fileName) : null,
     candidateSvgPath: outDir ? path.join(outDir, "candidates", fileName) : null,
   };
@@ -243,17 +256,17 @@ if (outDir) {
     candidatesDir,
     contactSheetPath,
     renderedPngPath,
-    candidates: top.map(({ rank, id, name, font_class, viewBox, pathCount, showSvgSha256, candidateSvgPath }) => ({
+    candidates: top.map(({ rank, id, name, font_class, viewBox, pathCount, candidateSvgPath }) => ({
       rank,
       id,
       name,
       font_class,
       viewBox,
       pathCount,
-      showSvgSha256,
       candidateSvgPath,
     })),
   }, null, 2));
 } else {
   console.log(JSON.stringify(summary, null, 2));
 }
+await randomSleep("end jitter");

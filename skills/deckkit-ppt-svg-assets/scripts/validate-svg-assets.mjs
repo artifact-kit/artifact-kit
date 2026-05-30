@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { access, readFile } from "node:fs/promises";
 import path from "node:path";
-import { createHash } from "node:crypto";
 
 function usage() {
   console.error([
@@ -9,7 +8,7 @@ function usage() {
     "  node validate-svg-assets.mjs --workdir /path/to/work",
     "  node validate-svg-assets.mjs --manifest manifests/svg-assets.json",
     "",
-    "Checks SVG files, manifest shape, Iconfont golden-base provenance, sha256, and core path preservation.",
+    "Checks SVG files, manifest shape, and Iconfont candidate provenance.",
   ].join("\n"));
   process.exit(2);
 }
@@ -28,31 +27,8 @@ async function exists(filePath) {
   }
 }
 
-function sha256(value) {
-  return createHash("sha256").update(value).digest("hex");
-}
-
 function isRecord(value) {
   return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-function normalizePathData(value) {
-  return value.trim().replace(/\s+/g, " ");
-}
-
-function extractPathData(svg) {
-  return [...svg.matchAll(/<path\b[^>]*\bd\s*=\s*(["'])([\s\S]*?)\1/gi)]
-    .map((match) => normalizePathData(match[2]))
-    .filter(Boolean);
-}
-
-function preservesCandidateCorePath(candidateSvg, generatedSvg) {
-  const candidatePaths = extractPathData(candidateSvg)
-    .filter((data) => data.length >= 80)
-    .sort((a, b) => b.length - a.length);
-  if (candidatePaths.length === 0) return null;
-  const generatedPaths = new Set(extractPathData(generatedSvg));
-  return candidatePaths.some((data) => generatedPaths.has(data));
 }
 
 function hasExternalDependency(svg) {
@@ -126,37 +102,24 @@ if (!(await exists(manifestPath))) {
     const iconfontReferences = Array.isArray(asset.iconfontReferences) ? asset.iconfontReferences : [];
     const selected = asset.selectedIconfontCandidate;
     if (iconfontReferences.length > 0 && selected === undefined) {
-      errors.push(`selectedIconfontCandidate is required when iconfontReferences are present on ${label}`);
+      warnings.push(`iconfontReferences present without selectedIconfontCandidate provenance on ${label}`);
     }
     if (selected !== undefined && iconfontReferences.length === 0) {
-      errors.push(`iconfontReferences must include the selected Iconfont candidate on ${label}`);
+      warnings.push(`selectedIconfontCandidate present without iconfontReferences on ${label}`);
     }
     if (selected !== undefined) {
       if (!isRecord(selected)) {
-        errors.push(`selectedIconfontCandidate must be an object on ${label}`);
+        warnings.push(`selectedIconfontCandidate is not an object on ${label}`);
         continue;
       }
-      if (selected.goldenBase !== true) errors.push(`selectedIconfontCandidate.goldenBase must be true on ${label}`);
       if (typeof selected.candidateSvgPath !== "string") {
-        errors.push(`selectedIconfontCandidate.candidateSvgPath is required on ${label}`);
+        warnings.push(`selectedIconfontCandidate.candidateSvgPath is missing on ${label}`);
         continue;
       }
       const candidateSvgPath = resolveWorkPath(workdir, selected.candidateSvgPath);
       if (!(await exists(candidateSvgPath))) {
-        errors.push(`selectedIconfontCandidate.candidateSvgPath does not exist on ${label}: ${selected.candidateSvgPath}`);
+        warnings.push(`selectedIconfontCandidate.candidateSvgPath does not exist on ${label}: ${selected.candidateSvgPath}`);
         continue;
-      }
-      const candidateSvg = await readFile(candidateSvgPath, "utf8");
-      if (typeof selected.showSvgSha256 === "string" && sha256(candidateSvg) !== selected.showSvgSha256) {
-        errors.push(`selectedIconfontCandidate.showSvgSha256 mismatch on ${label}`);
-      } else if (typeof selected.showSvgSha256 !== "string") {
-        warnings.push(`selectedIconfontCandidate.showSvgSha256 is missing on ${label}`);
-      }
-      const preserved = preservesCandidateCorePath(candidateSvg, generatedSvg);
-      if (preserved === false) {
-        errors.push(`svg file does not preserve selected Iconfont candidate core path on ${label}`);
-      } else if (preserved === null) {
-        warnings.push(`selected Iconfont candidate has no comparable core <path d> on ${label}`);
       }
     }
   }

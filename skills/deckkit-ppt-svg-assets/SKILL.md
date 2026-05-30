@@ -1,6 +1,6 @@
 ---
 name: deckkit-ppt-svg-assets
-description: Reconstruct SVG-ready PPT slide assets from bbox/crop inputs using explicit semantic SVG authoring, lucide references, Iconfont golden base SVG selection, batch SVG preview QA, and manifest output.
+description: Reconstruct SVG-ready PPT slide assets from bbox/crop inputs using Iconfont reference search, golden base SVG selection, explicit SVG assembly, batch SVG preview QA, and manifest output.
 ---
 
 # DeckKit PPT SVG Assets
@@ -11,16 +11,11 @@ This skill is the SVG reconstruction subset of `deckkit-ppt-replica`. It authors
 
 You can run this skill standalone inside a prepared DeckKit work folder. A full `deckkit-ppt-replica` workflow is not required to test Iconfont candidate selection, SVG generation, batch preview QA, or the Iconfont golden-base audit.
 
-## Required References
+## Required Iconfont References
 
-Before authoring semantic icons, resolve `SKILL_DIR` as the directory containing this `SKILL.md`, then use only these skill-local lucide references:
+Before authoring semantic icons, resolve `SKILL_DIR` as the directory containing this `SKILL.md`.
 
-- `$SKILL_DIR/reference/lucide/lucide-icons.jsonl`
-- `$SKILL_DIR/reference/lucide/icons/<icon>.svg`
-
-Do not search the current repo, parent directories, or the user's home directory for lucide assets. In an installed skill this reference directory may be `/Users/<USER>/.agents/skills/deckkit-ppt-svg-assets/reference/`; use that skill-local directory directly. Never run broad commands such as `find /Users/<user> ...` to locate lucide assets. If a required skill reference is missing, report the skill installation problem instead of falling back to unrelated files.
-
-Lucide is the first required reference source, but it is not the only allowed source. If lucide does not contain a clearly relevant semantic reference for the icon concept, such as domain-specific medical, biology, industrial, or local-service icons, you MUST search Iconfont using the API fallback below and inspect the top 20 candidates before authoring the SVG. For complex Iconfont-selected shapes, the selected `show_svg` is the golden base SVG, not a loose visual reference.
+Iconfont is the required default reference source for semantic icon assets. For every semantic icon, search Iconfont through the skill-local helper script, inspect the top candidates, select the best candidate by semantic correctness and asset quality, and use that selected SVG as the reference/base for assembly. For complex Iconfont-selected shapes, the selected `show_svg` is the golden base SVG, not a loose visual reference.
 
 ## Inputs
 
@@ -79,9 +74,8 @@ Suggested manifest shape:
       "svgPath": "svg/example_icon.svg",
       "bbox": { "x": 0, "y": 0, "w": 24, "h": 24 },
       "status": "complete",
-      "lucideReferences": ["reference/lucide/icons/cloud.svg"],
-      "iconfontReferences": [],
-      "notes": "Semantic cloud icon adapted to source stroke weight."
+      "iconfontReferences": ["iconfont:q=云#2:id=123456"],
+      "notes": "Iconfont candidate assembled and adapted to source stroke weight."
     }
   ],
   "outputPaths": ["svg/example_icon.svg"],
@@ -111,19 +105,14 @@ Required approach:
 For every semantic icon:
 
 1. Identify the icon's meaning from the source crop, neighboring labels, and task context.
-2. Search skill-local lucide metadata with `grep` or `jq`. This step is mandatory for every semantic icon, even when the icon seems unlikely to exist in lucide. For example:
+2. Derive the Iconfont search query from the icon's visual semantic meaning, not by blindly copying nearby PPT text. Nearby labels, section titles, and page theme are context clues for disambiguation, but the query should name what the icon depicts or symbolizes. For example:
 
-   ```bash
-   grep -Ei "thermometer|temperature|wifi|cloud|database" "$SKILL_DIR/reference/lucide/lucide-icons.jsonl"
-   ```
+   - If the nearby label is `营养管理` but the icon depicts a pancreas or organ, search `胰腺` or `器官`, not `营养管理`.
+   - If the nearby label is `血糖监测` and the icon depicts a glucose meter, search `血糖仪`, `血糖检测仪`, or `血糖监测仪`.
+   - If the nearby label is `感染预防` but the icon depicts a shield, virus, mask, or disinfectant bottle, search that visual concept such as `盾牌病毒`, `病毒防护`, `口罩`, or `消毒液`.
+   - If the nearby label is `管路管理` but the icon depicts an infusion tube, drainage tube, catheter, or IV bag, search `输液管`, `引流管`, `导管`, or `输液袋`.
 
-3. If lucide has a clearly relevant candidate, read the most relevant SVG source:
-
-   ```txt
-   $SKILL_DIR/reference/lucide/icons/<name>.svg
-   ```
-
-4. If lucide does not have a clearly relevant semantic candidate after the metadata search and source read, search Iconfont through the skill-local helper script. This fallback is mandatory for concepts that lucide does not cover well, for example nurse, liver, lung, kidney, stomach, organ, doctor specialty, local industry symbols, or domain-specific product icons.
+3. Search Iconfont through the skill-local helper script. This Iconfont search is mandatory for every semantic icon, including generic symbols and complex domain-specific concepts such as nurse, liver, lung, kidney, stomach, organ, doctor specialty, local industry symbols, or product icons.
 
    ```bash
    node "$SKILL_DIR/scripts/iconfont-top20-summary.mjs" \
@@ -135,7 +124,7 @@ For every semantic icon:
    Do not run raw `curl` from the session and paste the response into context. The helper script performs the API call, writes `raw-response.json`, `summary.json`, `candidates/*.svg`, `contact-sheet.svg`, and when possible `contact-sheet.svg.png`, then prints only compact paths and candidate metadata. The session should inspect the rendered contact sheet PNG or SVG plus summary, then read only the single selected candidate SVG.
 
    Use Chinese query terms when the concept is naturally Chinese or comes from Chinese slide text. If the first query is too broad or misses the concept, try one or two more precise semantic queries, such as `护士`, `护士帽`, `肝脏`, `肝`, `医生`, or `医疗护理`.
-5. The helper script encapsulates the Iconfont API request and response parsing. The API response shape, saved in `raw-response.json` for traceability but normally not read into model context, is:
+4. The helper script encapsulates the Iconfont API request and response parsing. The API response shape, saved in `raw-response.json` for traceability but normally not read into model context, is:
 
    ```json
    {
@@ -158,7 +147,15 @@ For every semantic icon:
    }
    ```
 
-6. Score Iconfont top-20 candidates before writing the final SVG. Inspect `/tmp/iconfont-*/contact-sheet.svg.png` when the helper reports `renderedPngPath`; otherwise inspect `/tmp/iconfont-*/contact-sheet.svg`, plus `/tmp/iconfont-*/summary.json`. Prefer the candidate with the closest silhouette and semantic primitives to the source crop, then the closest visual complexity, aspect ratio, and line/fill style. Only after choosing the best candidate should you read that one candidate file from `/tmp/iconfont-*/candidates/`. Copy that selected file into the work folder at `references/iconfont-candidates/<element-id>.svg`; do not leave the only provenance path in `/tmp`. The selected candidate's `show_svg` becomes the golden base asset for the subject shape. Record the chosen candidate in the manifest, including `candidateSvgPath`, `showSvgSha256`, and `goldenBase: true`, for example:
+5. Score Iconfont top-20 candidates before writing the final SVG. Inspect `/tmp/iconfont-*/contact-sheet.svg.png` when the helper reports `renderedPngPath`; otherwise inspect `/tmp/iconfont-*/contact-sheet.svg`, plus `/tmp/iconfont-*/summary.json`. The selection priority is:
+
+   1. Semantic correctness: the candidate represents the same concept and contains the right domain-specific structure, such as the correct organ/device/tube/bag/nurse form.
+   2. Asset quality: prefer the most refined, legible, well-proportioned, and visually polished candidate that can stand as the golden base at PPT icon size.
+   3. Adaptability to the slide: prefer candidates whose fill/stroke, color, background, and composition can be adapted with allowed modifications.
+
+   Do NOT choose a worse candidate merely because it is line art, has the same fill/stroke mode as the source crop, or superficially matches the crop's rendering style. Line-vs-fill and color are normally adjustable. For example, if a filled pancreas candidate is semantically stronger and more polished than a white-line pancreas candidate, choose the filled candidate and adapt its fill color/background instead of selecting the weaker line-art candidate.
+
+   Only after choosing the best candidate should you read that one candidate file from `/tmp/iconfont-*/candidates/`. Copy that selected file into the work folder at `references/iconfont-candidates/<element-id>.svg`; do not leave the only provenance path in `/tmp`. The selected candidate's `show_svg` becomes the golden base asset for the subject shape. Record the chosen candidate in the manifest, including `candidateSvgPath`, for example:
 
    ```json
    {
@@ -169,25 +166,26 @@ For every semantic icon:
        "id": 123456,
        "name": "护士",
        "candidateSvgPath": "references/iconfont-candidates/nurse.svg",
-       "showSvgSha256": "sha256-from-helper-summary",
        "goldenBase": true,
-       "reason": "Best top-20 silhouette match to the crop; show_svg used as golden base shape."
+       "reason": "Best semantic and asset-quality match; show_svg used as golden base shape."
      }
    }
    ```
 
-7. For complex domain-specific shapes from Iconfont, such as organs, nurses, medical devices, drainage/infusion tubes, industrial equipment, or highly specialized pictograms, do NOT redraw the icon from path memory and do NOT author an alternative subject geometry inspired by the candidate. Use the highest-scoring Iconfont candidate's `show_svg` as the golden base SVG for the subject shape. Only adjust:
+6. For complex domain-specific shapes from Iconfont, such as organs, nurses, medical devices, drainage/infusion tubes, industrial equipment, or highly specialized pictograms, do NOT redraw the icon from path memory and do NOT author an alternative subject geometry inspired by the candidate. Use the highest-scoring Iconfont candidate's `show_svg` as the golden base SVG for the subject shape. If the selected candidate is missing important subject details, choose a better complete candidate; do not repair it by drawing new subject internals. Only adjust:
 
    - foreground color or stroke/fill color
    - scale, crop, centering, and `viewBox` placement
    - background circle/card/badge
-   - small compositional overlays such as warning triangles, plus signs, shields, or status dots
-   - grouping with other already-selected icon shapes
+   - generic status badges outside the subject shape, such as warning triangles, plus signs, shields, or status dots
+   - grouping with other already-selected Iconfont candidate shapes, with each meaningful sub-icon recorded in `iconfontReferences` and copied under `references/iconfont-candidates/`
 
    Do not invent a new organ, nurse, tube, device, or other complex silhouette when a top-20 Iconfont candidate is a better shape match. Preserve the selected candidate's core paths/silhouette unless a minimal transform or color normalization is required for the slide style.
-   The generated `svg/<element-id>.svg` must retain at least one exact core `path d` from the copied candidate SVG. If you need a different color, wrap the candidate paths in groups or change paint attributes; do not replace the path geometry with hand-authored lookalike geometry.
-8. For simple generic symbols that lucide already covers well, reconstruct semantically from lucide and the crop. The Iconfont base-shape rule is specifically for complex shapes where hand-authored path reconstruction is likely to be worse than selecting and adapting the best candidate.
-9. If both lucide and Iconfont fail or network access is blocked, still author the best semantic SVG from crop/context and record the attempted query and failure reason in `validationGaps`.
+   If you need a different color, wrap the candidate paths in groups or change paint attributes; do not replace the subject geometry with hand-authored lookalike geometry.
+   Do not add hand-authored subject internals or extensions such as leaves, glucose screens, measurement strips, tube extensions, organ lobes, device panels, or anatomical details. Extra authored geometry may only be simple background/status geometry; it must not change what the chosen Iconfont subject depicts.
+7. If the target icon is a composition of multiple meaningful objects, run separate Iconfont searches for each meaningful object and compose the selected candidate SVGs. For example, a glucose monitoring icon that needs a meter plus strip should search/select both `血糖仪` and `试纸` if one candidate does not already include both. A tube-management icon that needs a bag plus tube should search/select both `输液袋` and `输液管` if one candidate does not already include both. Do not search one subject and hand-author the remaining meaningful object.
+8. For simple generic symbols, still use Iconfont search first. You may assemble a final icon from multiple selected Iconfont candidates or simple explicit SVG primitives when composition is needed, but record the Iconfont candidate(s) that drove the semantic choice.
+9. If Iconfont search fails or network access is blocked, still author the best semantic SVG from crop/context and record the attempted query and failure reason in `validationGaps`.
 10. If the icon is a semantic composition, draw it as multiple sub-icons or subgroups in one SVG instead of forcing all paths into one connected shape. For example, a "low-power sensing" icon can be one battery/lightning subgroup plus a separately positioned leaf subgroup:
 
    ```svg
@@ -261,8 +259,8 @@ After the preview QA/fix loop, perform static validation:
 - Every asset record has a matching `elementId`, original `route`, `cropPath`, and `svgPath`.
 - Every `svgPath` is under `svg/`, ends with `.svg`, exists, and contains SVG XML.
 - Every authored SVG has a `viewBox` and no external network or filesystem dependency.
-- Every complex Iconfont-derived asset records the chosen top-20 candidate in `iconfontReferences` and `selectedIconfontCandidate`, with `candidateSvgPath`, `showSvgSha256`, and `goldenBase: true`.
-- Every complex Iconfont-derived SVG preserves the selected candidate's core `path d`; validator failure here means the asset was hand-redrawn and must be fixed before handoff.
+- Every complex Iconfont-derived asset records the chosen top-20 candidate in `iconfontReferences` and `selectedIconfontCandidate`, with `candidateSvgPath`.
+- Every complex Iconfont-derived SVG should preserve selected candidates as the subject source and should not introduce hand-authored subject internals. Catch this in the batch visual QA loop by comparing the final SVG contact sheet against the selected Iconfont contact sheets/candidates.
 - The batch preview contact sheet path is recorded in `validationGaps` or notes only if it exposes a remaining issue; otherwise it can be left as a generated QA artifact.
 - `validationGaps` records any asset that could not be reconstructed semantically.
 
@@ -272,7 +270,7 @@ When running this skill standalone, use the skill-local validator before handoff
 node "$SKILL_DIR/scripts/validate-svg-assets.mjs" --workdir .
 ```
 
-This does not require running the full replica workflow. It checks manifest shape, SVG files, Iconfont candidate provenance, candidate sha256, and whether the generated SVG preserved the selected candidate's core `path d`.
+This does not require running the full replica workflow. It checks manifest shape, SVG files, and Iconfont candidate provenance. The semantic rule that complex subjects must come from selected Iconfont candidates is enforced by the skill workflow and batch visual QA, not by brittle geometric path matching.
 
 Then stop and report:
 
