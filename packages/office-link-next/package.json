@@ -1,0 +1,43 @@
+{
+  "name": "@artifact-kit/office-link-next",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "README.md",
+    "server.mjs",
+    "manifest.xml",
+    "next.config.ts",
+    "postcss.config.mjs",
+    "tsconfig.json",
+    "lib",
+    "pages",
+    "public",
+    "styles",
+    "skills/officelink-powerpoint-public"
+  ],
+  "scripts": {
+    "dev": "node server.mjs --ca .certs/ca.crt --key .certs/localhost.key --cert .certs/localhost.crt",
+    "dev:next": "node server.mjs --ca .certs/ca.crt --key .certs/localhost.key --cert .certs/localhost.crt",
+    "build": "next build",
+    "start": "NODE_ENV=production node server.mjs --ca .certs/ca.crt --key .certs/localhost.key --cert .certs/localhost.crt",
+    "lint": "eslint",
+    "sideload:powerpoint": "mkdir -p \"$HOME/Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef\" && cp manifest.xml \"$HOME/Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef/manifest.xml\"",
+    "validate:manifest": "office-addin-manifest validate manifest.xml"
+  },
+  "dependencies": {
+    "next": "16.2.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6",
+    "office-addin-manifest": "^2.1.5",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
